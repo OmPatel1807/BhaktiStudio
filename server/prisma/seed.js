@@ -38,7 +38,7 @@ async function main() {
     },
     {
       email: 'worker.camera@bhaktistudio.com',
-      name: 'Priya Camera Op',
+      name: 'OM Camera Op',
       phone: '+91 98765 33333',
       specialization: ['CAMERA_OPERATOR', 'STREAMING_OPERATOR'],
       experienceYrs: 4,
