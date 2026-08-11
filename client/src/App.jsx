@@ -27,8 +27,9 @@ function NavigationBar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // LOOP 20/22: AUTH PAGE CHECK (Hides internal links like Order Wizard on /login)
+  // LOOP 20/22: AUTH PAGE CHECK (Hides internal links like Order Wizard on / and /login)
   const isAuthPage =
+    location.pathname === '/' ||
     location.pathname === '/login' ||
     location.pathname === '/register' ||
     location.pathname.startsWith('/auth');

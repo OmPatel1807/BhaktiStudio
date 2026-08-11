@@ -210,27 +210,6 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           <div ref={googleBtnRef} />
         </div>
 
-        {/* LOOP 21: DEV FAST LOGIN BUTTON WITH IMMEDIATE ROLE REDIRECT */}
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => handleDevFastLogin(selectedRole)}
-          style={{
-            width: '100%',
-            backgroundColor: '#C97A13',
-            color: '#FFFFFF',
-            fontWeight: '800',
-            fontSize: '16px',
-            padding: '14px 20px',
-            borderRadius: '14px',
-            border: 'none',
-            cursor: loading ? 'wait' : 'pointer',
-            boxShadow: '0 8px 16px rgba(201, 122, 19, 0.25)',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          ⚡ Dev Quick Login ({selectedRole})
-        </button>
 
         {/* LOOP 59: WORKER SELF-REGISTRATION CALLOUT BOX */}
         <div
