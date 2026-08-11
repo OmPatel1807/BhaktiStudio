@@ -1,10 +1,10 @@
 services:
-  # Bhakti Studio Express API Backend Server
+  # Bhakti Studio Express API Backend Server (100% Free Tier)
   - type: web
     name: bhakti-studio-server
     env: node
     region: singapore
-    plan: starter
+    plan: free
     rootDir: server
     buildCommand: npm install && npm run prisma:generate
     startCommand: npx prisma migrate deploy && npm run prisma:seed && npm start
@@ -30,9 +30,9 @@ services:
         sync: false
 
 databases:
-  # Bhakti Studio Managed PostgreSQL Database
+  # Bhakti Studio Managed PostgreSQL Database (100% Free Tier)
   - name: bhakti-studio-db
     databaseName: bhakti_studio_db
     user: bhakti_admin
     region: singapore
-    plan: starter
+    plan: free
