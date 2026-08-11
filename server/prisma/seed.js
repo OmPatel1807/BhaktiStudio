@@ -8,12 +8,12 @@ async function main() {
 
   // 1. Seed Admin User
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@bhaktistudio.com' },
+    where: { email: 'ompatel.666to18@gmail.com' },
     update: {},
     create: {
-      email: 'admin@bhaktistudio.com',
+      email: 'ompatel.666to18@gmail.com',
       name: 'System Admin',
-      phone: '+91 99999 00000',
+      phone: '+91 7016025373',
       role: 'ADMIN',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
     },
