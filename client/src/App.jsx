@@ -661,6 +661,35 @@ function MainApp() {
           />
         </Routes>
       </main>
+      <style>{`
+        html, body, #root {
+          max-width: 100vw !important;
+          overflow-x: hidden !important;
+          position: relative;
+          box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+          box-sizing: inherit;
+        }
+
+        @media (max-width: 767px) {
+          .hidden-mobile {
+            display: none !important;
+          }
+          .show-mobile-only {
+            display: flex !important;
+          }
+        }
+        @media (min-width: 768px) {
+          .hidden-mobile {
+            display: flex !important;
+          }
+          .show-mobile-only {
+            display: none !important;
+          }
+        }
+      `}</style>
     </>
   );
 }

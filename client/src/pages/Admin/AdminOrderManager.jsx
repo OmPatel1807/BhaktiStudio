@@ -202,15 +202,13 @@ export const AdminOrderManager = () => {
           })}
         </div>
 
-        {/* LOOP 67: RESPONSIVE DATA TABLE CONTAINER */}
+        {/* LOOP 68: RESPONSIVE DATA CONTAINER (MOBILE STACKED CARDS + DESKTOP TABLE) */}
         <div
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderRadius: '24px',
             border: '1px solid var(--border-color)',
             padding: '24px 16px',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
             boxShadow: isDark ? '0 20px 25px -5px rgba(0,0,0,0.4)' : '0 10px 25px -5px rgba(0,0,0,0.08)',
           }}
         >
@@ -223,17 +221,175 @@ export const AdminOrderManager = () => {
               No order records found matching filter.
             </div>
           ) : (
-            <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '14px' }}>
-                  <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order Ref</th>
-                  <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Name</th>
-                  <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Event Type & Date</th>
-                  <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Venue Location</th>
-                  <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order & Crew Status</th>
-                  <th style={{ padding: '16px 14px', textAlign: 'center', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', minWidth: '380px' }}>ACTIONS</th>
-                </tr>
-              </thead>
+            <>
+              {/* MOBILE STACKED CARDS VIEW (< 768px) */}
+              <div className="show-mobile-only" style={{ display: 'none', flexDirection: 'column', gap: '16px' }}>
+                {filteredOrders.map((ord) => {
+                  const assignedCount = (ord.assignments || []).length;
+                  const isConfirmedOrActive = ['CONFIRMED', 'WORKERS_ASSIGNED', 'SETUP_IN_PROGRESS', 'EVENT_IN_PROGRESS'].includes(ord.status);
+
+                  return (
+                    <div
+                      key={ord.id}
+                      style={{
+                        backgroundColor: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '16px',
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '800', color: '#C97A13', fontSize: '16px' }}>
+                          {ord.orderNumber}
+                        </span>
+                        <span
+                          style={{
+                            backgroundColor: 'rgba(201, 122, 19, 0.15)',
+                            color: '#C97A13',
+                            padding: '4px 10px',
+                            borderRadius: '20px',
+                            fontWeight: '800',
+                            fontSize: '11px',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          {ord.status}
+                        </span>
+                      </div>
+
+                      <div>
+                        <div style={{ fontWeight: '800', color: 'var(--text-primary)', fontSize: '15px' }}>
+                          {ord.customer?.name || 'Customer'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          {ord.customer?.email || ord.customer?.phone || '-'}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <div>
+                          <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{ord.eventType}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            🗓️ {formatDateTime(ord.eventDate)}
+                          </div>
+                        </div>
+                        {isConfirmedOrActive && (
+                          <span
+                            style={{
+                              backgroundColor: assignedCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                              color: assignedCount > 0 ? '#10B981' : '#F59E0B',
+                              border: assignedCount > 0 ? '1px solid #10B981' : '1px solid #F59E0B',
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              fontWeight: '800',
+                              fontSize: '11px',
+                            }}
+                          >
+                            {assignedCount > 0 ? `✅ Crew (${assignedCount})` : '⚠️ Crew Pending'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: '12px', color: 'var(--text-primary)', backgroundColor: 'var(--bg-surface)', padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                        <div>📍 {ord.venueAddress}</div>
+                        {ord.distanceKm && (
+                          <div style={{ color: '#C97A13', fontWeight: '700', marginTop: '2px' }}>
+                            🚗 {ord.distanceKm} km {ord.requiresCustomTransport && '(Outstation)'}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* MOBILE ACTION BUTTONS GRID */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDetailsOrder(ord)}
+                          style={{
+                            backgroundColor: 'var(--bg-surface)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          🔍 Details
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/admin/quotation/${ord.id}`)}
+                          style={{
+                            backgroundColor: 'rgba(201, 122, 19, 0.15)',
+                            color: '#C97A13',
+                            border: '1px solid #C97A13',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          ✏️ Quotation
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedQrOrder(ord)}
+                          style={{
+                            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                            color: '#3B82F6',
+                            border: '1px solid #3B82F6',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          📱 QR Access
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAssignOrder(ord)}
+                          style={{
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            color: '#10B981',
+                            border: '1px solid #10B981',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          👷 Assign Crew
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* DESKTOP DATA TABLE VIEW (>= 768px) */}
+              <div className="hidden-mobile" style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                      <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order Ref</th>
+                      <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Name</th>
+                      <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Event Type & Date</th>
+                      <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Venue Location</th>
+                      <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order & Crew Status</th>
+                      <th style={{ padding: '16px 14px', textAlign: 'center', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px', minWidth: '380px' }}>ACTIONS</th>
+                    </tr>
+                  </thead>
               <tbody>
                 {filteredOrders.map((ord) => {
                   const assignedCount = (ord.assignments || []).length;
@@ -530,8 +686,10 @@ export const AdminOrderManager = () => {
                 })}
               </tbody>
             </table>
-          )}
-        </div>
+          </div>
+        </>
+      )}
+    </div>
       </div>
 
       {/* Order Details Modal */}
