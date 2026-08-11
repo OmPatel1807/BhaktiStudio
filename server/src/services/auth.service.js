@@ -47,9 +47,37 @@ export class AuthService {
   static async authenticateUserWithGoogle({ email, name, picture, requestedRole }) {
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Designated Admin emails list
+    const ADMIN_EMAILS = [
+      'ompatel.666to18@gmail.com',
+      'admin@bhaktistudio.com',
+      process.env.ADMIN_EMAIL,
+    ].filter(Boolean).map((e) => e.toLowerCase().trim());
+
+    const isDesignatedAdmin = ADMIN_EMAILS.includes(normalizedEmail);
+
     let user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
+
+    // Auto-promote or auto-create designated Admin emails
+    if (isDesignatedAdmin) {
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            name,
+            avatarUrl: picture,
+            role: 'ADMIN',
+          },
+        });
+      } else if (user.role !== 'ADMIN') {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { role: 'ADMIN' },
+        });
+      }
+    }
 
     if (requestedRole === 'ADMIN') {
       if (!user || user.role !== 'ADMIN') {
