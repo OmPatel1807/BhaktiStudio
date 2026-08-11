@@ -6,6 +6,8 @@ server/node_modules/
 # Environment Variables & Secrets
 .env
 server/.env
+client/.env.production
+*.env
 *.env.local
 
 # Production Build Outputs

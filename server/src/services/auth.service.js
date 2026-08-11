@@ -3,11 +3,13 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const DEFAULT_GOOGLE_CLIENT_ID =
-  process.env.GOOGLE_CLIENT_ID ||
-  '871965050422-hgt53cj9m38hu6o392ffntcm3t9c9rs5.apps.googleusercontent.com';
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
 
-const googleClient = new OAuth2Client(DEFAULT_GOOGLE_CLIENT_ID);
+if (!googleClientId) {
+  console.warn('[SECURITY WARNING] GOOGLE_CLIENT_ID environment variable is missing.');
+}
+
+const googleClient = new OAuth2Client(googleClientId);
 
 export class AuthService {
   /**
@@ -28,7 +30,7 @@ export class AuthService {
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken,
-        audience: [DEFAULT_GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_ID].filter(Boolean),
+        audience: googleClientId,
       });
       payload = ticket.getPayload();
     } catch (error) {
