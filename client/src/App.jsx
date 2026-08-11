@@ -311,7 +311,7 @@ function MainApp() {
       <NavigationBar />
       <main>
         <Routes>
-          <Route path="/" element={<OrderWizard />} />
+          <Route path="/" element={<LoginGateway />} />
           <Route path="/login" element={<LoginGateway />} />
           <Route path="/join-crew" element={<WorkerRegistration />} />
 
