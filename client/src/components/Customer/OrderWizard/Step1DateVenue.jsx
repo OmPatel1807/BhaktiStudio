@@ -138,8 +138,8 @@ export const Step1DateVenue = ({
           </div>
         )}
 
-        {/* Hybrid Date & Start/End Time Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+        {/* LOOP 71: RESPONSIVE DATE & TIME GRID (STACKS ON MOBILE, 3 COLS ON DESKTOP) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', width: '100%' }}>
           <div>
             <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
               Event Date

@@ -243,55 +243,77 @@ export const OrderWizard = () => {
       }}
     >
       <div style={{ maxWidth: '920px', margin: '0 auto' }}>
-        {/* STEPPER NAVIGATION TABS */}
+        {/* LOOP 71: STEPPER NAVIGATION TABS */}
         <div style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            {['Event', 'Services', 'Specs', 'Pricing', 'Payment', 'Review'].map((label, idx) => {
-              const isCurrent = step === idx + 1;
-              const isPassed = step > idx + 1;
-              return (
-                <div
-                  key={label}
-                  onClick={() => {
-                    if (idx + 1 > 2 && selectedServiceIds.length === 0) {
-                      setErrorMsg('Please select at least one service or equipment to proceed.');
-                      return;
-                    }
-                    setErrorMsg(null);
-                    setStep(idx + 1);
-                  }}
-                  style={{
-                    fontSize: '16px',
-                    fontWeight: isCurrent ? '800' : '600',
-                    color: isCurrent ? '#C97A13' : isPassed ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    backgroundColor: isCurrent ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  {idx + 1}. {label}
-                </div>
-              );
-            })}
+          {/* MOBILE STEPPER PROGRESS HEADER (< 768px) */}
+          <div className="show-mobile-only" style={{ display: 'none', width: '100%', marginBottom: '20px', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: '800', color: '#C97A13', marginBottom: '8px' }}>
+              <span>STEP {step} OF 6</span>
+              <span>{['Event & Schedule', 'Services & Equipment', 'Specifications', 'Pricing & Quote', 'Payment Preference', 'Review Order'][step - 1]}</span>
+            </div>
+            <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--bg-input)', borderRadius: '999px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+              <div
+                style={{
+                  height: '100%',
+                  backgroundColor: '#C97A13',
+                  borderRadius: '999px',
+                  transition: 'width 0.3s ease',
+                  width: `${(step / 6) * 100}%`,
+                }}
+              />
+            </div>
           </div>
-          <div
-            style={{
-              height: '6px',
-              backgroundColor: 'var(--border-color)',
-              borderRadius: '3px',
-              overflow: 'hidden',
-            }}
-          >
+
+          {/* DESKTOP STEPPER PILL TABS (>= 768px) */}
+          <div className="hidden-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+              {['Event', 'Services', 'Specs', 'Pricing', 'Payment', 'Review'].map((label, idx) => {
+                const isCurrent = step === idx + 1;
+                const isPassed = step > idx + 1;
+                return (
+                  <div
+                    key={label}
+                    onClick={() => {
+                      if (idx + 1 > 2 && selectedServiceIds.length === 0) {
+                        setErrorMsg('Please select at least one service or equipment to proceed.');
+                        return;
+                      }
+                      setErrorMsg(null);
+                      setStep(idx + 1);
+                    }}
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: isCurrent ? '800' : '600',
+                      color: isCurrent ? '#C97A13' : isPassed ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      backgroundColor: isCurrent ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {idx + 1}. {label}
+                  </div>
+                );
+              })}
+            </div>
             <div
               style={{
-                height: '100%',
-                backgroundColor: '#C97A13',
-                width: `${(step / 6) * 100}%`,
-                transition: 'width 0.3s ease',
+                height: '6px',
+                backgroundColor: 'var(--border-color)',
+                borderRadius: '3px',
+                overflow: 'hidden',
               }}
-            />
+            >
+              <div
+                style={{
+                  height: '100%',
+                  backgroundColor: '#C97A13',
+                  width: `${(step / 6) * 100}%`,
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
           </div>
         </div>
 
