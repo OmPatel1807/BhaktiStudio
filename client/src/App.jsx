@@ -301,7 +301,7 @@ function NavigationBar() {
         </div>
 
         {/* MOBILE HAMBURGER BUTTON TOGGLE */}
-        <div className="show-mobile-only" style={{ display: 'none', alignItems: 'center', gap: '12px' }}>
+        <div className="show-mobile-only" style={{ display: 'none', alignItems: 'center', gap: '8px', flexShrink: 0, paddingRight: '2px' }}>
           {isAuthenticated && <NotificationBell />}
           <button
             type="button"
@@ -311,13 +311,14 @@ function NavigationBar() {
               color: 'var(--text-primary)',
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
-              padding: '8px 14px',
-              fontSize: '20px',
+              padding: '8px 12px',
+              fontSize: '18px',
               fontWeight: '800',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
             {mobileMenuOpen ? '✕' : '🍔'}

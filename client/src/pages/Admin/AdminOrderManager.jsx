@@ -70,6 +70,20 @@ export const AdminOrderManager = () => {
     }
   };
 
+  // LOOP 70: Real-time status count calculations
+  const pendingCount = orders.filter((o) =>
+    ['SUBMITTED', 'UNDER_REVIEW', 'QUOTATION_SENT', 'AWAITING_CUSTOMER_CONFIRMATION', 'DRAFT'].includes(o.status)
+  ).length;
+  const confirmedCount = orders.filter((o) =>
+    ['CONFIRMED', 'WORKERS_ASSIGNED'].includes(o.status)
+  ).length;
+  const activeCount = orders.filter((o) =>
+    ['SETUP_IN_PROGRESS', 'EVENT_IN_PROGRESS', 'IN_EXECUTION'].includes(o.status)
+  ).length;
+  const completedCount = orders.filter((o) =>
+    ['EVENT_COMPLETED', 'FINAL_PAYMENT_PENDING', 'COMPLETED', 'CLOSED', 'CANCELLED', 'REJECTED'].includes(o.status)
+  ).length;
+
   // Filter & Search Logic (LOOP 55 Tab Categorization)
   const filteredOrders = orders.filter((ord) => {
     // Status Filter
@@ -150,8 +164,39 @@ export const AdminOrderManager = () => {
           />
         </div>
 
-        {/* LOOP 67: TOUCH-SWIPEABLE FILTER TABS CONTAINER */}
+        {/* LOOP 70: SMART MOBILE STATUS SELECTOR DROPDOWN (< 768px) */}
+        <div className="show-mobile-only" style={{ display: 'none', width: '100%', marginBottom: '20px', flexDirection: 'column' }}>
+          <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+            Filter Orders by Status:
+          </label>
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            style={{
+              width: '100%',
+              backgroundColor: 'var(--bg-surface)',
+              color: '#C97A13',
+              border: '1px solid var(--border-color)',
+              borderRadius: '14px',
+              padding: '12px 16px',
+              fontWeight: '800',
+              fontSize: '15px',
+              outline: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+            }}
+          >
+            <option value="ALL">📦 All Orders ({orders.length})</option>
+            <option value="PENDING">⏳ Pending Review ({pendingCount})</option>
+            <option value="CONFIRMED">✅ Confirmed ({confirmedCount})</option>
+            <option value="ACTIVE">⚡ Active Execution ({activeCount})</option>
+            <option value="COMPLETED">📁 Completed / History ({completedCount})</option>
+          </select>
+        </div>
+
+        {/* LOOP 70: DESKTOP/TABLET PILL TABS BAR (>= 768px) */}
         <div
+          className="hidden-mobile"
           style={{
             display: 'flex',
             gap: '10px',
@@ -163,17 +208,14 @@ export const AdminOrderManager = () => {
             width: '100%',
             boxSizing: 'border-box',
             overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            touchAction: 'pan-x',
-            scrollbarWidth: 'none',
           }}
         >
           {[
-            { id: 'ALL', label: 'All Orders' },
-            { id: 'PENDING', label: 'Pending Review' },
-            { id: 'CONFIRMED', label: 'Confirmed' },
-            { id: 'ACTIVE', label: 'Active Execution' },
-            { id: 'COMPLETED', label: 'Completed / History' },
+            { id: 'ALL', label: `All Orders (${orders.length})` },
+            { id: 'PENDING', label: `Pending Review (${pendingCount})` },
+            { id: 'CONFIRMED', label: `Confirmed (${confirmedCount})` },
+            { id: 'ACTIVE', label: `Active Execution (${activeCount})` },
+            { id: 'COMPLETED', label: `Completed / History (${completedCount})` },
           ].map((tab) => {
             const isSelected = activeTab === tab.id;
             return (
