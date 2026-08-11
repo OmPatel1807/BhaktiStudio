@@ -150,18 +150,22 @@ export const AdminOrderManager = () => {
           />
         </div>
 
-        {/* LOOP 39: FULL-WIDTH FILTER TABS CONTAINER */}
+        {/* LOOP 67: TOUCH-SWIPEABLE FILTER TABS CONTAINER */}
         <div
           style={{
             display: 'flex',
-            gap: '12px',
-            marginBottom: '32px',
+            gap: '10px',
+            marginBottom: '28px',
             backgroundColor: 'var(--bg-surface)',
             padding: '8px',
             borderRadius: '18px',
             border: '1px solid var(--border-color)',
             width: '100%',
             boxSizing: 'border-box',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x',
+            scrollbarWidth: 'none',
           }}
         >
           {[
@@ -178,14 +182,14 @@ export const AdminOrderManager = () => {
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 style={{
-                  flex: 1,
-                  textAlign: 'center',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
                   backgroundColor: isSelected ? '#C97A13' : 'transparent',
                   color: isSelected ? '#FFFFFF' : 'var(--text-secondary)',
                   border: 'none',
                   borderRadius: '12px',
-                  padding: '12px 16px',
-                  fontSize: '15px',
+                  padding: '10px 18px',
+                  fontSize: '14px',
                   fontWeight: isSelected ? '800' : '600',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
@@ -198,14 +202,15 @@ export const AdminOrderManager = () => {
           })}
         </div>
 
-        {/* Orders Table Container */}
+        {/* LOOP 67: RESPONSIVE DATA TABLE CONTAINER */}
         <div
           style={{
             backgroundColor: 'var(--bg-surface)',
             borderRadius: '24px',
             border: '1px solid var(--border-color)',
-            padding: '32px',
+            padding: '24px 16px',
             overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
             boxShadow: isDark ? '0 20px 25px -5px rgba(0,0,0,0.4)' : '0 10px 25px -5px rgba(0,0,0,0.08)',
           }}
         >
@@ -218,7 +223,7 @@ export const AdminOrderManager = () => {
               No order records found matching filter.
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '14px' }}>
                   <th style={{ padding: '16px 14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Order Ref</th>
