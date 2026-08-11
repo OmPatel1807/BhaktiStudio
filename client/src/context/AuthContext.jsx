@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { parseJsonResponse } from '../utils/apiHelper';
 
 const AuthContext = createContext(null);
 
@@ -34,7 +35,7 @@ export const AuthProvider = ({ children }) => {
       body: JSON.stringify({ idToken, requestedRole }),
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
     if (!response.ok || !data.success) {
       throw new Error(data.message || 'Google authentication failed.');
     }

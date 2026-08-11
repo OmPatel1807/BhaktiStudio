@@ -11,16 +11,16 @@ const PORT = process.env.PORT || 5000;
 
 // Production CORS configuration allowing Vercel deployment frontend & local dev
 const allowedOrigins = [
-  process.env.CLIENT_URL,
-  'https://bhakti-studio.vercel.app',
   'http://localhost:3000',
   'http://localhost:5173',
+  process.env.CLIENT_URL,
+  'https://bhakti-studio-one.vercel.app',
+  'https://bhakti-studio.vercel.app',
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
       if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
         callback(null, true);
       } else {
@@ -28,6 +28,8 @@ app.use(
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
