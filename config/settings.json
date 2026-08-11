@@ -1,0 +1,27 @@
+{
+  "businessName": "Bhakti Studio",
+  "contactEmail": "info@bhaktistudio.com",
+  "contactPhone": "+91 98765 43210",
+  "currency": "INR",
+  "currencySymbol": "₹",
+  "pricingRules": {
+    "baseLedSqFtRate": 150.0,
+    "defaultSetupFee": 2000.0,
+    "defaultTransportRate": 50.0,
+    "taxPercentage": 18.0,
+    "advancePayPercentage": 30.0,
+    "minimumRentalHours": 4,
+    "defaultTechnicianHourlyRate": 500.0
+  },
+  "cancellationPolicy": {
+    "fullRefundNoticeHours": 72,
+    "partialRefundNoticeHours": 24,
+    "partialRefundPercentage": 50.0
+  },
+  "theme": {
+    "palette": "Obsidian Gold",
+    "darkBg": "#0F172A",
+    "lightBg": "#F8FAFC",
+    "accentColor": "#F59E0B"
+  }
+}

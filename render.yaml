@@ -1,0 +1,38 @@
+services:
+  # Bhakti Studio Express API Backend Server
+  - type: web
+    name: bhakti-studio-server
+    env: node
+    region: singapore
+    plan: starter
+    rootDir: server
+    buildCommand: npm install && npm run prisma:generate
+    startCommand: npx prisma migrate deploy && npm run prisma:seed && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5001
+      - key: CLIENT_URL
+        value: https://bhakti-studio.vercel.app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bhakti-studio-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+databases:
+  # Bhakti Studio Managed PostgreSQL Database
+  - name: bhakti-studio-db
+    databaseName: bhakti_studio_db
+    user: bhakti_admin
+    region: singapore
+    plan: starter

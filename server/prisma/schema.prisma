@@ -1,0 +1,242 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  WORKER
+}
+
+enum OrderStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  QUOTATION_SENT
+  AWAITING_CUSTOMER_CONFIRMATION
+  CONFIRMED
+  WORKERS_ASSIGNED
+  SETUP_IN_PROGRESS
+  EVENT_IN_PROGRESS
+  EVENT_COMPLETED
+  FINAL_PAYMENT_PENDING
+  COMPLETED
+  CLOSED
+  CANCELLED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  INITIATED
+  PARTIALLY_PAID
+  PAID
+  ON_SITE_PENDING
+  FAILED
+  REFUNDED
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  RESERVED
+  DISPATCHED
+  IN_USE
+  MAINTENANCE
+  DAMAGED
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  name             String
+  phone            String?
+  role             Role             @default(CUSTOMER)
+  avatarUrl        String?
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  customerProfile  CustomerProfile?
+  workerProfile    WorkerProfile?
+  orders           Order[]          @relation("CustomerOrders")
+  uploadedPhotos   EventPhoto[]     @relation("PhotoUploader")
+  auditLogs        AuditLog[]       @relation("AuditActor")
+}
+
+model CustomerProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkerProfile {
+  id             String               @id @default(uuid())
+  userId         String               @unique
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialization String[]
+  experienceYrs  Int                  @default(0)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  availabilities WorkerAvailability[]
+  assignments    WorkerAssignment[]
+}
+
+model WorkerAvailability {
+  id        String        @id @default(uuid())
+  workerId  String
+  worker    WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    String        @default("AVAILABLE") // AVAILABLE, UNAVAILABLE, ON_LEAVE, BUSY
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model ServiceCatalog {
+  id          String          @id @default(uuid())
+  name        String
+  category    String
+  description String?
+  isActive    Boolean         @default(true)
+  pricingModel String         // AREA_BASED, PER_UNIT, FIXED
+  baseRate    Float
+  setupCharge Float           @default(0.0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  equipment   EquipmentUnit[]
+}
+
+model EquipmentUnit {
+  id          String          @id @default(uuid())
+  assetTag    String          @unique
+  serviceId   String
+  service     ServiceCatalog  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  status      EquipmentStatus @default(AVAILABLE)
+  condition   String          @default("GOOD")
+  lastChecked DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Order {
+  id             String             @id @default(uuid())
+  orderNumber    String             @unique
+  customerId     String
+  customer       User               @relation("CustomerOrders", fields: [customerId], references: [id])
+  eventType      String
+  eventDate      DateTime
+  startTime      String
+  endTime        String
+  venueAddress   String
+  notes          String?
+  ledWidthFeet   Float?
+  ledHeightFeet  Float?
+  distanceKm     Float?
+  requiresCustomTransport Boolean @default(false)
+  status         OrderStatus        @default(DRAFT)
+  paymentStatus  PaymentStatus      @default(PENDING)
+  qrCodeToken    String             @unique @default(uuid())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  orderItems     OrderItem[]
+  quotations     QuotationVersion[]
+  assignments    WorkerAssignment[]
+  photos         EventPhoto[]
+  payments       PaymentRecord[]
+  auditLogs      AuditLog[]
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  serviceName   String
+  widthFt       Float?
+  heightFt      Float?
+  quantity      Int      @default(1)
+  estimatedRate Float
+  finalRate     Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model QuotationVersion {
+  id              String   @id @default(uuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  versionNumber   Int      @default(1)
+  subtotal        Float    @default(0)
+  setupFee        Float    @default(0)
+  transportFee    Float    @default(0)
+  technicianFee   Float    @default(0)
+  discounts       Float    @default(0)
+  taxAmount       Float    @default(0)
+  totalAmount     Float    @default(0)
+  advanceFee      Float    @default(0)
+  isAdminApproved Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model WorkerAssignment {
+  id              String           @id @default(uuid())
+  orderId         String
+  order           Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  workerId        String
+  worker          WorkerProfile    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  assignedRole    String
+  status          AssignmentStatus @default(PENDING)
+  assignedAt      DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model EventPhoto {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  uploaderId String
+  uploader   User     @relation("PhotoUploader", fields: [uploaderId], references: [id])
+  photoUrl   String
+  category   String   // SETUP_PRE_EVENT, EVENT_LIVE, TEARDOWN_POST_EVENT, ISSUES
+  caption    String?
+  createdAt  DateTime @default(now())
+}
+
+model PaymentRecord {
+  id            String        @id @default(uuid())
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentType   String        // ADVANCE_DEPOSIT, REMAINING_BALANCE, ON_SITE_CASH, FULL_PAYMENT
+  paymentMethod String        // UPI_ONLINE, RAZORPAY, CASH, BANK_TRANSFER
+  status        PaymentStatus @default(PENDING)
+  transactionRef String?
+  qrCodeScanLog String?
+  createdAt     DateTime      @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User     @relation("AuditActor", fields: [actorId], references: [id])
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}
