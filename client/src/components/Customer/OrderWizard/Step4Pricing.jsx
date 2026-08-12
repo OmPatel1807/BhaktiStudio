@@ -35,22 +35,29 @@ export const Step4Pricing = ({ calculatingEstimate, estimation, selectedServices
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Services & Equipment Subtotal:</span>
-            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.servicesSubtotal)}</strong>
+            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.servicesSubtotal || 0)}</strong>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Estimated Setup Charge:</span>
-            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.setupFeeTotal)}</strong>
+            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.setupFeeTotal || 0)}</strong>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-secondary)' }}>Transportation Charge:</span>
-            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.transportFee)}</strong>
+            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.transportFee || 0)}</strong>
           </div>
 
+          {Number(summary.technicianFee || 0) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Technician & Crew Charge:</span>
+              <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.technicianFee)}</strong>
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>GST ({summary.taxPercentage}%):</span>
-            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.taxAmount)}</strong>
+            <span style={{ color: 'var(--text-secondary)' }}>GST ({summary.taxPercentage || 18}%):</span>
+            <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.taxAmount || 0)}</strong>
           </div>
 
           <div
@@ -65,7 +72,7 @@ export const Step4Pricing = ({ calculatingEstimate, estimation, selectedServices
             }}
           >
             <span>Estimated Total:</span>
-            <span>{formatCurrency(summary.grandTotal)}</span>
+            <span>{formatCurrency(summary.grandTotal || 0)}</span>
           </div>
 
           {isSelectionEmpty && (

@@ -83,7 +83,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
   const calculation = PricingEngineService.calculateQuotation({
     widthFeet,
     heightFeet,
-    technicianHours: hasLedWall ? 8 : 0,
+    technicianHours: 0,
     transportDistanceKm: Number(transportDistanceKm) || 0,
     customItems,
   });

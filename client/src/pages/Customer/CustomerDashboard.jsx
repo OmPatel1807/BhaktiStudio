@@ -211,27 +211,27 @@ export const CustomerDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Card Footer Row: Financial Breakdown & View Details Action */}
+                  {/* LOOP 75: Card Footer Row (Responsive Stacking on Mobile) */}
                   <div
                     style={{
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-end',
+                      flexDirection: 'column',
+                      gap: '16px',
                       borderTop: '1px solid var(--border-color)',
-                      paddingTop: '24px',
+                      paddingTop: '20px',
                       marginTop: '8px',
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {totalLabel}
                       </div>
-                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
+                      <div style={{ fontSize: '26px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
                         {formatCurrency(displayTotal)}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
                       {ord.paymentStatus !== 'PAID' && (
                         <button
                           type="button"
@@ -240,15 +240,19 @@ export const CustomerDashboard = () => {
                             setPaymentModalState({ isOpen: true, order: ord, quotation: latestQuotation });
                           }}
                           style={{
+                            flex: 1,
+                            minWidth: '140px',
                             backgroundColor: '#F59E0B',
                             color: '#0F172A',
-                            padding: '14px 22px',
+                            padding: '12px 18px',
                             borderRadius: '14px',
                             fontWeight: '900',
-                            fontSize: '15px',
+                            fontSize: '14px',
                             border: 'none',
                             cursor: 'pointer',
                             boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                            whiteSpace: 'nowrap',
+                            textAlign: 'center',
                           }}
                         >
                           💳 Pay Online Now
@@ -258,14 +262,18 @@ export const CustomerDashboard = () => {
                         type="button"
                         onClick={() => setSelectedOrder(ord)}
                         style={{
-                          backgroundColor: 'var(--bg-surface)',
+                          flex: 1,
+                          minWidth: '120px',
+                          backgroundColor: 'var(--bg-input)',
                           color: 'var(--text-primary)',
                           border: '1px solid var(--border-color)',
-                          padding: '14px 22px',
+                          padding: '12px 18px',
                           borderRadius: '14px',
-                          fontWeight: '800',
-                          fontSize: '15px',
+                          fontWeight: '700',
+                          fontSize: '14px',
                           cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          textAlign: 'center',
                         }}
                       >
                         View Details

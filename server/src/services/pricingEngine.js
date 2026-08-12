@@ -62,9 +62,9 @@ export class PricingEngineService {
     const subtotal = servicesSubtotal + setupFee + transportFee + technicianFee - Number(adminDiscount);
     const taxableAmount = Math.max(0, subtotal);
     const taxRate = customTaxRate !== null ? Number(customTaxRate) : rules.taxPercentage;
-    const taxAmount = (taxableAmount * taxRate) / 100;
+    const taxAmount = Math.round((taxableAmount * taxRate) / 100);
     const grandTotal = taxableAmount + taxAmount;
-    const advanceRequired = (grandTotal * rules.advancePayPercentage) / 100;
+    const advanceRequired = Math.round((grandTotal * rules.advancePayPercentage) / 100);
 
     return {
       areaSqFt,
