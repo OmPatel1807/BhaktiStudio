@@ -118,7 +118,7 @@ export class NotificationService {
               phone: payload.customerPhone || '919876543210',
               templateName: 'quotation_ready',
               params: [payload.orderNumber, payload.totalAmount],
-              textMessage: `Hello! Your quotation for Order #${payload.orderNumber} at Bhakti Studio is ready. View details: http://localhost:3000/customer/dashboard`,
+              textMessage: `Hello! Your quotation for Order #${payload.orderNumber} at Bhakti Studio is ready. View details: ${process.env.CLIENT_URL}/customer/dashboard`,
             });
             break;
 
@@ -135,7 +135,7 @@ export class NotificationService {
               phone: payload.workerPhone || '919876543210',
               templateName: 'job_assigned',
               params: [payload.orderNumber, payload.role],
-              textMessage: `Hi! You have been assigned to ${payload.role} for Event Order #${payload.orderNumber}. Open workspace: http://localhost:3000/worker/dashboard`,
+              textMessage: `Hi! You have been assigned to ${payload.role} for Event Order #${payload.orderNumber}. Open workspace: ${process.env.CLIENT_URL}/worker/dashboard`,
             });
             break;
 

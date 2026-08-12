@@ -82,22 +82,13 @@ iframe {
 /* --------------------------------------------------------------------------
    3. IOS SAFARI AUTO-ZOOM & TOUCH TARGET FIXES
    -------------------------------------------------------------------------- */
-/* iOS Safari forces screen zoom if font-size < 16px on form focus, causing page overflow */
+/* iOS Safari forces screen zoom if font-size < 16px on form focus, causing page overflow.
+   Keep 16px on every screen size, not just mobile — it's also the accessible minimum for body text. */
 input,
 select,
 textarea {
   font-size: 16px !important;
   max-width: 100%;
-}
-
-@media (min-width: 640px) {
-
-  input,
-  select,
-  textarea {
-    font-size: 0.875rem !important;
-    /* 14px on desktop/tablets */
-  }
 }
 
 button,
@@ -125,10 +116,6 @@ button,
   .mobile-full-width {
     width: 100% !important;
   }
-
-  .text-responsive-title {
-    font-size: 1.25rem !important;
-  }
 }
 
 /* TIER 2: STANDARD SMARTPHONES & IPHONE 15 PRO MAX (380px - 639px / max 430px) */
@@ -145,10 +132,6 @@ button,
 
   .mobile-full-width {
     width: 100% !important;
-  }
-
-  .text-responsive-title {
-    font-size: 1.5rem !important;
   }
 
   /* Touch target rule */
@@ -171,10 +154,6 @@ button,
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 1rem !important;
   }
-
-  .text-responsive-title {
-    font-size: 1.75rem !important;
-  }
 }
 
 /* TIER 4: LAPTOPS & MACBOOKS (1024px - 1439px) */
@@ -185,10 +164,6 @@ button,
     margin-right: auto !important;
     padding-left: 2rem !important;
     padding-right: 2rem !important;
-  }
-
-  .text-responsive-title {
-    font-size: 2rem !important;
   }
 }
 
@@ -201,10 +176,12 @@ button,
     padding-left: 2.5rem !important;
     padding-right: 2.5rem !important;
   }
+}
 
-  .text-responsive-title {
-    font-size: 2.25rem !important;
-  }
+/* Large hero/section titles: fluid scaling instead of jumping between fixed
+   sizes at each breakpoint. Floor stays well above the 16px body-text minimum. */
+.text-responsive-title {
+  font-size: clamp(1.25rem, 1rem + 1.5vw, 2.25rem) !important;
 }
 
 /* --------------------------------------------------------------------------

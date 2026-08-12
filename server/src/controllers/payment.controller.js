@@ -1,7 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 import { PaymentService } from '../services/payment.service.js';
+import { PricingEngineService } from '../services/pricingEngine.js';
 
 const prisma = new PrismaClient();
+
+// Derives this server's own public base URL: prefer the explicit env var
+// (set in render.yaml for production), fall back to the incoming request's
+// protocol/host so local dev works without any extra configuration.
+const getServerBaseUrl = (req) => process.env.SERVER_URL || `${req.protocol}://${req.get('host')}`;
+const getClientBaseUrl = () => process.env.CLIENT_URL;
 
 /**
  * POST /api/v1/payments/create-intent
@@ -24,21 +31,7 @@ export const createPaymentIntent = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    const quotation = order.quotations[0];
-    let totalAmount = quotation ? quotation.totalAmount : 0;
-    let advanceAmount = quotation ? quotation.advanceFee : 0;
-
-    // Fallback estimation calculation if quotation record is missing or incomplete
-    if (!quotation || totalAmount === 0) {
-      const equipmentSubtotal = (order.orderItems || []).reduce((sum, item) => {
-        const rate = Number(item.finalRate || item.estimatedRate || 0);
-        const qty = Number(item.quantity || 1);
-        return sum + rate * qty;
-      }, 0);
-      const subtotal = equipmentSubtotal + 4500;
-      totalAmount = subtotal + subtotal * 0.18;
-      advanceAmount = totalAmount * 0.3;
-    }
+    const { totalAmount, advanceAmount } = PricingEngineService.resolveOrderFinancials(order);
 
     let amountToPay = totalAmount;
     if (paymentType === 'ADVANCE' || paymentType === 'ADVANCE_30') {
@@ -108,20 +101,7 @@ export const verifyPayment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    const quotation = order.quotations[0];
-    let totalAmount = quotation ? quotation.totalAmount : 0;
-    let advanceFee = quotation ? quotation.advanceFee : 0;
-
-    if (!quotation || totalAmount === 0) {
-      const equipmentSubtotal = (order.orderItems || []).reduce((sum, item) => {
-        const rate = Number(item.finalRate || item.estimatedRate || 0);
-        const qty = Number(item.quantity || 1);
-        return sum + rate * qty;
-      }, 0);
-      const subtotal = equipmentSubtotal + 4500;
-      totalAmount = subtotal + subtotal * 0.18;
-      advanceFee = totalAmount * 0.3;
-    }
+    const { totalAmount, advanceAmount: advanceFee } = PricingEngineService.resolveOrderFinancials(order);
 
     const paidAmount = (paymentType === 'ADVANCE' || paymentType === 'ADVANCE_30') ? advanceFee : totalAmount;
 
@@ -192,15 +172,14 @@ export const recordCashPayment = async (req, res) => {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { quotations: { orderBy: { versionNumber: 'desc' }, take: 1 }, payments: true },
+      include: { quotations: { orderBy: { versionNumber: 'desc' }, take: 1 }, payments: true, orderItems: true },
     });
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    const quotation = order.quotations[0];
-    const totalAmount = quotation ? quotation.totalAmount : 0;
+    const { totalAmount } = PricingEngineService.resolveOrderFinancials(order);
 
     const paymentRecord = await prisma.paymentRecord.create({
       data: {
@@ -327,24 +306,11 @@ export const initiateBankRedirect = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    const quotation = order.quotations[0];
-    let totalAmount = quotation ? quotation.totalAmount : 0;
-    let advanceAmount = quotation ? quotation.advanceFee : 0;
-
-    if (!quotation || totalAmount === 0) {
-      const equipmentSubtotal = (order.orderItems || []).reduce((sum, item) => {
-        const rate = Number(item.finalRate || item.estimatedRate || 0);
-        const qty = Number(item.quantity || 1);
-        return sum + rate * qty;
-      }, 0);
-      const subtotal = equipmentSubtotal + 4500;
-      totalAmount = subtotal + subtotal * 0.18;
-      advanceAmount = totalAmount * 0.3;
-    }
+    const { totalAmount, advanceAmount } = PricingEngineService.resolveOrderFinancials(order);
 
     const calculatedAmount = paymentType === 'FULL' ? totalAmount : advanceAmount;
     const amountToPay = (amount && Number(amount) > 0) ? Number(amount) : calculatedAmount;
-    const redirectUrl = `http://localhost:5001/api/v1/payments/mock-bank-portal?orderId=${order.id}&orderNumber=${order.orderNumber}&bankCode=${bankCode}&amount=${amountToPay}&paymentType=${paymentType}`;
+    const redirectUrl = `${getServerBaseUrl(req)}/api/v1/payments/mock-bank-portal?orderId=${order.id}&orderNumber=${order.orderNumber}&bankCode=${bankCode}&amount=${amountToPay}&paymentType=${paymentType}`;
 
     return res.json({
       success: true,
@@ -378,23 +344,35 @@ export const renderMockBankPortal = async (req, res) => {
       });
 
       if (order) {
-        const quotation = order.quotations[0];
-        let totalAmount = quotation ? quotation.totalAmount : 0;
-        let advanceAmount = quotation ? quotation.advanceFee : 0;
-
-        if (!quotation || totalAmount === 0) {
-          const equipmentSubtotal = (order.orderItems || []).reduce((sum, item) => {
-            const rate = Number(item.finalRate || item.estimatedRate || 0);
-            const qty = Number(item.quantity || 1);
-            return sum + rate * qty;
-          }, 0);
-          const subtotal = equipmentSubtotal + 4500;
-          totalAmount = subtotal + subtotal * 0.18;
-          advanceAmount = totalAmount * 0.3;
-        }
+        const { totalAmount, advanceAmount } = PricingEngineService.resolveOrderFinancials(order);
         payableAmount = paymentType === 'FULL' ? totalAmount : advanceAmount;
       } else {
-        payableAmount = 5664; // Safe baseline default fallback
+        // No order/orderId could be resolved — surface a clear error instead of
+        // silently charging an arbitrary fixed amount.
+        const errorHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Unable to Verify Order — Bhakti Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #F1F5F9; color: #0F172A; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { max-width: 480px; margin: 24px; background-color: #FFFFFF; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 32px; text-align: center; }
+    .icon { font-size: 40px; margin-bottom: 12px; }
+    h1 { font-size: 18px; margin: 0 0 12px; }
+    p { font-size: 14px; color: #64748B; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⚠️</div>
+    <h1>Unable to Verify Order</h1>
+    <p>We couldn't locate booking ${orderNumber ? `#${orderNumber}` : (orderId ? `#${orderId}` : '')} to determine the payable amount. Please return to your dashboard and retry payment, or contact support if this persists.</p>
+  </div>
+</body>
+</html>`;
+        return res.status(404).send(errorHtml);
       }
     }
 
@@ -477,7 +455,7 @@ export const renderMockBankPortal = async (req, res) => {
       <span class="value" style="color: ${color}; font-size: 24px; font-weight: 900;">₹${formattedAmountStr}</span>
     </div>
 
-    <form action="http://localhost:5001/api/v1/payments/bank-callback" method="POST">
+    <form action="${getServerBaseUrl(req)}/api/v1/payments/bank-callback" method="POST">
       <input type="hidden" name="orderId" value="${orderId || ''}">
       <input type="hidden" name="orderNumber" value="${orderNumber}">
       <input type="hidden" name="amount" value="${payableAmount}">
@@ -529,20 +507,9 @@ export const handleBankCallback = async (req, res) => {
     });
 
     if (order) {
-      const quotation = order.quotations[0];
-      let totalAmount = quotation ? quotation.totalAmount : 0;
+      const { totalAmount, advanceAmount } = PricingEngineService.resolveOrderFinancials(order);
 
-      if (!quotation || totalAmount === 0) {
-        const equipmentSubtotal = (order.orderItems || []).reduce((sum, item) => {
-          const rate = Number(item.finalRate || item.estimatedRate || 0);
-          const qty = Number(item.quantity || 1);
-          return sum + rate * qty;
-        }, 0);
-        const subtotal = equipmentSubtotal + 4500;
-        totalAmount = subtotal + subtotal * 0.18;
-      }
-
-      const paidAmount = Number(amount) || (paymentType === 'FULL' ? totalAmount : totalAmount * 0.3);
+      const paidAmount = Number(amount) || (paymentType === 'FULL' ? totalAmount : advanceAmount);
 
       const paymentRecord = await prisma.paymentRecord.create({
         data: {
@@ -573,11 +540,11 @@ export const handleBankCallback = async (req, res) => {
     }
 
     const finalRef = order ? order.orderNumber : (orderNumber || 'BS-2026-00001');
-    const redirectUrl = `http://localhost:3000/customer/dashboard?payment_status=success&orderNumber=${finalRef}`;
+    const redirectUrl = `${getClientBaseUrl()}/customer/dashboard?payment_status=success&orderNumber=${finalRef}`;
 
     return res.redirect(redirectUrl);
   } catch (error) {
     console.error('Bank callback error:', error);
-    return res.redirect('http://localhost:3000/customer/dashboard?payment_status=success');
+    return res.redirect(`${getClientBaseUrl()}/customer/dashboard?payment_status=success`);
   }
 };

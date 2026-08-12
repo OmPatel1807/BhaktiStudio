@@ -102,10 +102,10 @@ export const NotificationBell = () => {
       {isOpen && (
         <div
           style={{
-            position: 'absolute',
-            right: 0,
-            top: '46px',
-            width: '340px',
+            position: 'fixed',
+            right: '16px',
+            top: '62px',
+            width: 'min(340px, calc(100vw - 32px))',
             backgroundColor: '#1E293B',
             border: '1px solid #334155',
             borderRadius: '16px',

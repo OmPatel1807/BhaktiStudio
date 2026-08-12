@@ -232,7 +232,7 @@ export const AdminOrderManager = () => {
                   border: 'none',
                   borderRadius: '12px',
                   padding: '10px 18px',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   fontWeight: isSelected ? '800' : '600',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',

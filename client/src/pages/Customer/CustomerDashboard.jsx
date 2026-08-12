@@ -12,19 +12,27 @@ export const CustomerDashboard = () => {
   const { token, user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [paymentModalState, setPaymentModalState] = useState({ isOpen: false, order: null, quotation: null });
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState(null);
 
   const fetchOrders = async () => {
+    setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch('/api/v1/orders/my-orders', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json();
-      if (json.success) setOrders(json.data);
+      if (res.ok && json.success) {
+        setOrders(json.data);
+      } else {
+        setFetchError(json.message || 'Unable to load your bookings right now.');
+      }
     } catch (err) {
       console.error('Failed to fetch orders:', err);
+      setFetchError('Unable to reach the server. It may be starting up — please retry in a few seconds.');
     } finally {
       setLoading(false);
     }
@@ -117,6 +125,39 @@ export const CustomerDashboard = () => {
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '16px' }}>
             Loading your bookings...
+          </div>
+        ) : fetchError ? (
+          <div
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderRadius: '24px',
+              border: '1px dashed #EF4444',
+              padding: '60px 20px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '56px', marginBottom: '16px' }}>⚠️</div>
+            <h3 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
+              Couldn't load your bookings
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '15px', marginBottom: '28px' }}>
+              {fetchError}
+            </p>
+            <button
+              type="button"
+              onClick={fetchOrders}
+              style={{
+                backgroundColor: '#EF4444',
+                color: '#FFFFFF',
+                fontWeight: '800',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              🔄 Retry
+            </button>
           </div>
         ) : orders.length === 0 ? (
           <div
@@ -223,10 +264,10 @@ export const CustomerDashboard = () => {
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {totalLabel}
                       </div>
-                      <div style={{ fontSize: '26px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
                         {formatCurrency(displayTotal)}
                       </div>
                     </div>
@@ -247,7 +288,7 @@ export const CustomerDashboard = () => {
                             padding: '12px 18px',
                             borderRadius: '14px',
                             fontWeight: '900',
-                            fontSize: '14px',
+                            fontSize: '15px',
                             border: 'none',
                             cursor: 'pointer',
                             boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
@@ -270,7 +311,7 @@ export const CustomerDashboard = () => {
                           padding: '12px 18px',
                           borderRadius: '14px',
                           fontWeight: '700',
-                          fontSize: '14px',
+                          fontSize: '15px',
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
                           textAlign: 'center',

@@ -59,11 +59,14 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           },
         });
 
-        // Render official Google Sign-In Button
+        // Render official Google Sign-In Button, sized to fit narrow viewports
+        // (Google's renderButton requires a numeric pixel width, not CSS).
+        const containerWidth = googleBtnRef.current.parentElement?.clientWidth || 380;
+        const buttonWidth = Math.min(380, Math.max(200, containerWidth));
         window.google.accounts.id.renderButton(googleBtnRef.current, {
           theme: 'filled_amber',
           size: 'large',
-          width: 380,
+          width: buttonWidth,
           text: 'continue_with',
           shape: 'pill',
         });

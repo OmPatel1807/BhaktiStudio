@@ -137,7 +137,7 @@ export const TimeWheelPicker = ({ value = '10:00 AM', onChange, isOpen, onClose 
         border: '1px solid var(--border-color)',
         borderRadius: '24px',
         padding: '20px',
-        width: '320px',
+        width: 'min(320px, calc(100vw - 32px), 100%)',
         boxShadow: '0 20px 30px -5px rgba(0, 0, 0, 0.25)',
         fontFamily: 'Inter, system-ui, sans-serif',
       }}

@@ -75,7 +75,7 @@ export const HybridDatePicker = ({ value, onChange, minDate }) => {
             borderRadius: '16px',
             padding: '20px',
             zIndex: 999,
-            width: '320px',
+            width: 'min(320px, calc(100vw - 32px), 100%)',
             boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
           }}
         >

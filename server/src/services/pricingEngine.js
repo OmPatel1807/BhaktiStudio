@@ -30,6 +30,32 @@ export class PricingEngineService {
   }
 
   /**
+   * Resolves an order's grand total and advance-due amount from its latest
+   * quotation snapshot, falling back to a rough equipment-based estimate
+   * when no quotation exists yet. Single source of truth for payment
+   * controllers so tax/advance rule changes apply everywhere at once.
+   */
+  static resolveOrderFinancials(order) {
+    const quotation = order.quotations?.[0];
+    let totalAmount = quotation ? quotation.totalAmount : 0;
+    let advanceAmount = quotation ? quotation.advanceFee : 0;
+
+    if (!quotation || totalAmount === 0) {
+      const rules = this.getSettings().pricingRules;
+      const equipmentSubtotal = (order.orderItems || []).reduce((sum, item) => {
+        const rate = Number(item.finalRate || item.estimatedRate || 0);
+        const qty = Number(item.quantity || 1);
+        return sum + rate * qty;
+      }, 0);
+      const subtotal = equipmentSubtotal + 4500;
+      totalAmount = subtotal + (subtotal * rules.taxPercentage) / 100;
+      advanceAmount = (totalAmount * rules.advancePayPercentage) / 100;
+    }
+
+    return { totalAmount, advanceAmount };
+  }
+
+  /**
    * Server-side dynamic pricing calculation
    */
   static calculateQuotation({

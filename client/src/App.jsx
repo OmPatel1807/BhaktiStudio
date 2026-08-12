@@ -75,7 +75,7 @@ function NavigationBar() {
                       style={{
                         color: location.pathname === '/customer/new-order' ? '#C97A13' : 'var(--text-primary)',
                         textDecoration: 'none',
-                        fontSize: '15px',
+                        fontSize: '16px',
                         fontWeight: '700',
                         padding: '8px 14px',
                         borderRadius: '10px',
@@ -91,7 +91,7 @@ function NavigationBar() {
                       style={{
                         color: location.pathname === '/customer/dashboard' ? '#C97A13' : 'var(--text-primary)',
                         textDecoration: 'none',
-                        fontSize: '15px',
+                        fontSize: '16px',
                         fontWeight: '700',
                         padding: '8px 14px',
                         borderRadius: '10px',
@@ -106,7 +106,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/join-crew' ? '#FFFFFF' : '#C39B5A',
                       textDecoration: 'none',
-                      fontSize: '14px',
+                      fontSize: '15px',
                       fontWeight: '800',
                       padding: '8px 14px',
                       borderRadius: '10px',
@@ -128,7 +128,7 @@ function NavigationBar() {
                   style={{
                     color: location.pathname === '/worker/dashboard' ? '#C97A13' : 'var(--text-primary)',
                     textDecoration: 'none',
-                    fontSize: '15px',
+                    fontSize: '16px',
                     fontWeight: '700',
                     padding: '8px 14px',
                     borderRadius: '10px',
@@ -147,7 +147,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/analytics' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
@@ -161,7 +161,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/orders' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
@@ -175,7 +175,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/audit-logs' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
@@ -189,7 +189,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/catalog' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
@@ -203,7 +203,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/workers' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
@@ -230,7 +230,7 @@ function NavigationBar() {
               padding: '8px 14px',
               borderRadius: '10px',
               fontWeight: '700',
-              fontSize: '14px',
+              fontSize: '15px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -245,7 +245,7 @@ function NavigationBar() {
           {isAuthenticated ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)' }}>
                   {user.name}
                 </span>
                 <span
@@ -271,7 +271,7 @@ function NavigationBar() {
                   border: '1px solid var(--border-color)',
                   padding: '8px 14px',
                   borderRadius: '10px',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   fontWeight: '700',
                   cursor: 'pointer',
                 }}
@@ -289,7 +289,7 @@ function NavigationBar() {
                   border: 'none',
                   padding: '8px 18px',
                   borderRadius: '10px',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   fontWeight: '700',
                   cursor: 'pointer',
                 }}
@@ -350,7 +350,7 @@ function NavigationBar() {
                       style={{
                         color: location.pathname === '/customer/new-order' ? '#C97A13' : 'var(--text-primary)',
                         textDecoration: 'none',
-                        fontSize: '15px',
+                        fontSize: '16px',
                         fontWeight: '700',
                         padding: '10px 14px',
                         borderRadius: '10px',
@@ -367,7 +367,7 @@ function NavigationBar() {
                       style={{
                         color: location.pathname === '/customer/dashboard' ? '#C97A13' : 'var(--text-primary)',
                         textDecoration: 'none',
-                        fontSize: '15px',
+                        fontSize: '16px',
                         fontWeight: '700',
                         padding: '10px 14px',
                         borderRadius: '10px',
@@ -403,7 +403,7 @@ function NavigationBar() {
                   style={{
                     color: location.pathname === '/worker/dashboard' ? '#C97A13' : 'var(--text-primary)',
                     textDecoration: 'none',
-                    fontSize: '15px',
+                    fontSize: '16px',
                     fontWeight: '700',
                     padding: '10px 14px',
                     borderRadius: '10px',
@@ -422,7 +422,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/analytics' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '10px 14px',
                       borderRadius: '10px',
@@ -437,7 +437,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/orders' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '10px 14px',
                       borderRadius: '10px',
@@ -452,7 +452,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/audit-logs' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '10px 14px',
                       borderRadius: '10px',
@@ -467,7 +467,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/catalog' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '10px 14px',
                       borderRadius: '10px',
@@ -482,7 +482,7 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/workers' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '15px',
+                      fontSize: '16px',
                       fontWeight: '700',
                       padding: '10px 14px',
                       borderRadius: '10px',
@@ -507,7 +507,7 @@ function NavigationBar() {
                 padding: '8px 16px',
                 borderRadius: '10px',
                 fontWeight: '700',
-                fontSize: '14px',
+                fontSize: '15px',
                 cursor: 'pointer',
               }}
             >
@@ -523,7 +523,7 @@ function NavigationBar() {
                   border: '1px solid #EF4444',
                   padding: '8px 16px',
                   borderRadius: '10px',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   fontWeight: '700',
                   cursor: 'pointer',
                 }}
@@ -540,7 +540,7 @@ function NavigationBar() {
                     border: 'none',
                     padding: '8px 18px',
                     borderRadius: '10px',
-                    fontSize: '14px',
+                    fontSize: '15px',
                     fontWeight: '700',
                     cursor: 'pointer',
                   }}

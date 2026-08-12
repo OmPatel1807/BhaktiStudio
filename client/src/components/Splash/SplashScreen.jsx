@@ -53,8 +53,8 @@ export const SplashScreen = ({ onComplete }) => {
       <div
         style={{
           position: 'absolute',
-          width: '350px',
-          height: '350px',
+          width: 'min(350px, calc(100vw - 32px))',
+          height: 'min(350px, calc(100vw - 32px))',
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(56,189,248,0.2) 0%, rgba(15,23,42,0) 70%)',
           transform: stage >= 1 ? 'scale(1.2)' : 'scale(0.8)',

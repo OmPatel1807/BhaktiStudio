@@ -5,11 +5,14 @@ export const Logo = ({ size = 'medium', layout = 'horizontal', showText = true }
   const { isDark } = useTheme();
 
   // LOOP 19: ENLARGED LOGO EMBLEM & BRANDING DIMENSIONS
+  // Icon/wordmark scale fluidly with clamp() so the logo never overlaps
+  // neighboring header controls on narrow viewports, without ever dropping
+  // the wordmark below a comfortably legible size.
   const dimensions = {
-    small: { icon: 42, text: '20px' },
-    medium: { icon: 56, text: '26px' },
-    large: { icon: 96, text: '34px' },
-  }[size] || { icon: 56, text: '26px' };
+    small: { iconW: 'clamp(32px, 9vw, 42px)', iconH: 'clamp(24px, 6.75vw, 31.5px)', text: 'clamp(15px, 4vw, 20px)' },
+    medium: { iconW: 'clamp(40px, 11vw, 56px)', iconH: 'clamp(30px, 8.25vw, 42px)', text: 'clamp(17px, 4.5vw, 26px)' },
+    large: { iconW: 'clamp(60px, 16vw, 96px)', iconH: 'clamp(45px, 12vw, 72px)', text: 'clamp(20px, 6vw, 34px)' },
+  }[size] || { iconW: 'clamp(40px, 11vw, 56px)', iconH: 'clamp(30px, 8.25vw, 42px)', text: 'clamp(17px, 4.5vw, 26px)' };
 
   const gradientId = `logoGrad_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -19,19 +22,20 @@ export const Logo = ({ size = 'medium', layout = 'horizontal', showText = true }
         display: 'flex',
         flexDirection: layout === 'vertical' ? 'column' : 'row',
         alignItems: 'center',
-        gap: layout === 'vertical' ? '14px' : '16px',
+        gap: layout === 'vertical' ? '14px' : 'clamp(8px, 3vw, 16px)',
         userSelect: 'none',
         cursor: 'pointer',
       }}
     >
       {/* Exact Custom Line-Art Emblem SVG: Meditation Figure + 4 Intricate Veined Leaves + Sparkles + Flourish Base */}
       <svg
-        width={dimensions.icon}
-        height={dimensions.icon * 0.75}
         viewBox="0 0 200 150"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         style={{
+          width: dimensions.iconW,
+          height: dimensions.iconH,
+          flexShrink: 0,
           filter: isDark
             ? 'drop-shadow(0 0 14px rgba(56, 189, 248, 0.45))'
             : 'drop-shadow(0 3px 10px rgba(201, 122, 19, 0.3))',
