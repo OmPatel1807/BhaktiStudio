@@ -157,7 +157,8 @@ export const AdminOrderManager = () => {
               border: '1px solid var(--border-color)',
               borderRadius: '14px',
               padding: '12px 18px',
-              width: '340px',
+              width: '100%',
+              maxWidth: '360px',
               fontSize: '14px',
               fontWeight: '500',
             }}

@@ -234,15 +234,15 @@ export const OrderWizard = () => {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
-        padding: '48px 24px',
+        padding: '32px 16px',
         fontFamily: 'Inter, system-ui, sans-serif',
         transition: 'background-color 0.3s ease, color 0.3s ease',
       }}
     >
-      <div style={{ maxWidth: '920px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '920px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         {/* LOOP 71: STEPPER NAVIGATION TABS */}
         <div style={{ marginBottom: '40px' }}>
           {/* MOBILE STEPPER PROGRESS HEADER (< 768px) */}
