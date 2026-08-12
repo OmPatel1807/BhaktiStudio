@@ -25,7 +25,7 @@ export const Step5Payment = ({
       </p>
 
       {/* Payment Preference Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px', width: '100%' }}>
         <div
           onClick={() => setPaymentPreference('ONLINE')}
           style={{
@@ -83,7 +83,7 @@ export const Step5Payment = ({
           </h3>
 
           {/* Amount Type Selection */}
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px', width: '100%' }}>
             <div
               onClick={() => setPaymentType('ADVANCE')}
               style={{

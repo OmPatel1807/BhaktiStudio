@@ -16,7 +16,7 @@ export const Step3Specs = ({ selectedServices = [], specifications, setSpecifica
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Render LED Dimensions ONLY if an LED Wall / Display Service is Selected */}
         {hasLedWall && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', width: '100%' }}>
             <div>
               <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
                 LED Wall Width (Feet)

@@ -40,7 +40,7 @@ export const Step2Services = ({
       {loadingServices ? (
         <div style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>Loading catalog...</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', width: '100%' }}>
           {(availableServices || []).map((svc) => {
             const isSelected = selectedServiceIds.includes(svc.id);
             return (
