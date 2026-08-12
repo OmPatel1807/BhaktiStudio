@@ -49,12 +49,14 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
 
   let widthFeet = hasLedWall ? (Number(ledWidthFeet) || 12) : 0;
   let heightFeet = hasLedWall ? (Number(ledHeightFeet) || 8) : 0;
+  let ledBaseRate = null;
 
   selectedServices.forEach((item) => {
     const catalogMatch = catalog.find((c) => c.id === item.serviceId || c.id === item || c.name === item.name);
 
     if (catalogMatch) {
       if (catalogMatch.category === 'DISPLAY' || catalogMatch.name.toUpperCase().includes('LED')) {
+        ledBaseRate = Number(catalogMatch.baseRate);
         itemizedList.push({
           serviceName: catalogMatch.name,
           widthFt: widthFeet,
@@ -86,6 +88,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
     technicianHours: 0,
     transportDistanceKm: Number(transportDistanceKm) || 0,
     customItems,
+    ledBaseRate,
   });
 
   return {

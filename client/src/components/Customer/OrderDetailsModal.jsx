@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { getAdvancePercentage } from '../../services/pricingService';
 import { rehydrateQuotation, computeEquipmentSubtotal } from '../../utils/quotationMath';
 
 export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, onMarkCompleted }) => {
@@ -147,7 +148,7 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
               <span style={{ fontWeight: '800', color: '#C97A13' }}>{formatCurrency(latestQuotation.totalAmount)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              <span>30% Mandatory Advance Required:</span>
+              <span>{getAdvancePercentage()}% Mandatory Advance Required:</span>
               <span style={{ fontWeight: '700', color: '#C97A13' }}>{formatCurrency(latestQuotation.advanceFee)}</span>
             </div>
           </div>

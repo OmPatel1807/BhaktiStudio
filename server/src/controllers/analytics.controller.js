@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { PricingEngineService } from '../services/pricingEngine.js';
 
 const prisma = new PrismaClient();
 
@@ -8,6 +9,8 @@ const prisma = new PrismaClient();
  */
 export const getOverviewMetrics = async (req, res) => {
   try {
+    const rules = PricingEngineService.getSettings().pricingRules;
+
     // 1. Total Revenue from Paid Payment Records
     const paymentsSum = await prisma.paymentRecord.aggregate({
       where: { status: 'PAID' },
@@ -59,14 +62,17 @@ export const getOverviewMetrics = async (req, res) => {
         if (isStale) {
           const calculatedSubtotal = equipmentSubtotal + overheadsTotal - discounts;
           const taxableBase = Math.max(0, calculatedSubtotal);
-          const taxAmount = (taxableBase * 18) / 100;
+          const taxAmount = (taxableBase * rules.taxPercentage) / 100;
           totalQuotedAmount += (taxableBase + taxAmount);
         } else {
           totalQuotedAmount += Number(latestQuotation.totalAmount || 0);
         }
       } else if (equipmentSubtotal > 0) {
-        const estimatedSubtotal = equipmentSubtotal + 4500;
-        const estimatedTax = estimatedSubtotal * 0.18;
+        const areaSqFt = Number(order.ledWidthFeet || 0) * Number(order.ledHeightFeet || 0);
+        const setupFee = areaSqFt > 0 ? rules.defaultSetupFee : 500.0;
+        const transportFee = order.distanceKm ? Number(order.distanceKm) * rules.defaultTransportRate : 0;
+        const estimatedSubtotal = equipmentSubtotal + setupFee + transportFee;
+        const estimatedTax = (estimatedSubtotal * rules.taxPercentage) / 100;
         totalQuotedAmount += (estimatedSubtotal + estimatedTax);
       }
     }
@@ -103,6 +109,7 @@ export const getOverviewMetrics = async (req, res) => {
  */
 export const getRevenueTrends = async (req, res) => {
   try {
+    const { advancePayPercentage } = PricingEngineService.getSettings().pricingRules;
     const { timeframe = '30d' } = req.query;
 
     let daysToSubtract = 30;
@@ -132,7 +139,7 @@ export const getRevenueTrends = async (req, res) => {
     const series = Object.entries(grouped).map(([date, revenue]) => ({
       date,
       revenue,
-      advanceCollected: Math.round(revenue * 0.3),
+      advanceCollected: Math.round((revenue * advancePayPercentage) / 100),
     }));
 
     // Fallback demo points if seed data lacks historical spread

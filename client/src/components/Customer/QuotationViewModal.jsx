@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
+import { getAdvancePercentage } from '../../services/pricingService';
 
 export const QuotationViewModal = ({ order, quotation, isOpen, onClose, onResponseSubmitted }) => {
   const [loading, setLoading] = useState(false);
@@ -125,7 +126,7 @@ export const QuotationViewModal = ({ order, quotation, isOpen, onClose, onRespon
             marginBottom: '24px',
           }}
         >
-          💳 Advance Payable upon Confirmation (30%): <strong>{formatCurrency(quotation.advanceFee)}</strong>
+          💳 Advance Payable upon Confirmation ({getAdvancePercentage()}%): <strong>{formatCurrency(quotation.advanceFee)}</strong>
         </div>
 
         {showRejectInput && (

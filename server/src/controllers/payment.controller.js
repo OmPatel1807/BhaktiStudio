@@ -444,7 +444,7 @@ export const renderMockBankPortal = async (req, res) => {
     </div>
     <div class="row">
       <span class="label">Payment Type:</span>
-      <span class="value">${paymentType === 'FULL' ? '100% Full Payment' : '30% Mandatory Advance'}</span>
+      <span class="value">${paymentType === 'FULL' ? '100% Full Payment' : `${PricingEngineService.getSettings().pricingRules.advancePayPercentage}% Mandatory Advance`}</span>
     </div>
     <div class="row">
       <span class="label">Official Gateway Endpoint:</span>

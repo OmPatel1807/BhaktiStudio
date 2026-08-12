@@ -1,10 +1,12 @@
 /**
  * LOOP 40: Unified Quotation Math Helper
- * 
+ *
  * Single source of truth for resolving display totals across all frontend components.
  * Eliminates fragile stale-detection heuristics by trusting the DB quotation record
  * as the authoritative source once it exists.
  */
+
+import { calculateEstimatedPricing, getAdvancePercentage, getTaxPercentage } from '../services/pricingService';
 
 /**
  * Compute the equipment subtotal from order items.
@@ -42,10 +44,10 @@ export function rehydrateQuotation(quotation, orderItems = []) {
   const netSubtotal = equipmentSubtotal + additionalFeesTotal - discounts;
   const taxableAmount = Math.max(0, netSubtotal);
 
-  // Detect the GST rate: reverse-engineer from stored values, fallback 18%
+  // Detect the GST rate: reverse-engineer from stored values, fallback to settings
   const storedSubtotal = Number(quotation.subtotal || 0);
   const storedTax = Number(quotation.taxAmount || 0);
-  let gstRate = 18;
+  let gstRate = getTaxPercentage();
   if (storedSubtotal > 0 && storedTax > 0) {
     const inferredRate = (storedTax / storedSubtotal) * 100;
     if (inferredRate >= 1 && inferredRate <= 50) {
@@ -55,7 +57,7 @@ export function rehydrateQuotation(quotation, orderItems = []) {
 
   const taxAmount = (taxableAmount * gstRate) / 100;
   const totalAmount = taxableAmount + taxAmount;
-  const advanceFee = (totalAmount * 30) / 100;
+  const advanceFee = (totalAmount * getAdvancePercentage()) / 100;
 
   // Check if the stored values already match the calculated values (within ₹1 tolerance)
   const storedTotal = Number(quotation.totalAmount || 0);
@@ -103,14 +105,33 @@ export function resolveOrderDisplayTotal(order) {
     };
   }
 
-  // No quotation exists — compute a raw estimate from order items only
-  const equipmentSubtotal = computeEquipmentSubtotal(order.orderItems);
+  // No quotation exists — compute a raw estimate using the same shared pricing
+  // logic the server's /orders/estimate endpoint uses, so setup/transport/
+  // technician fees are represented the same way here as everywhere else.
+  const orderItems = order.orderItems || [];
+  const equipmentSubtotal = computeEquipmentSubtotal(orderItems);
   if (equipmentSubtotal === 0) {
     return { displayTotal: 0, label: 'Estimated Total', quotation: null };
   }
 
-  const taxAmount = (equipmentSubtotal * 18) / 100;
-  const displayTotal = equipmentSubtotal + taxAmount;
+  // The LED item is the one order.controller.js stamped with widthFt/heightFt;
+  // everything else is a flat-rate custom item.
+  const ledItem = orderItems.find((item) => item.widthFt && item.heightFt);
+  const customItems = orderItems
+    .filter((item) => item !== ledItem)
+    .map((item) => ({
+      price: Number(item.finalRate || item.estimatedRate || 0),
+      quantity: Number(item.quantity || 1),
+    }));
 
-  return { displayTotal, label: 'Estimated Total', quotation: null };
+  const estimate = calculateEstimatedPricing({
+    ledWidthFeet: Number(order.ledWidthFeet || 0),
+    ledHeightFeet: Number(order.ledHeightFeet || 0),
+    technicianHours: 0,
+    transportDistanceKm: Number(order.distanceKm || 0),
+    customItems,
+    ledBaseRate: ledItem ? Number(ledItem.finalRate || ledItem.estimatedRate || 0) : null,
+  });
+
+  return { displayTotal: estimate.grandTotal, label: 'Estimated Total', quotation: null };
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { getAdvancePercentage } from '../../services/pricingService';
 
 export const QuotationEditor = () => {
   const { orderId } = useParams();
@@ -128,7 +129,7 @@ export const QuotationEditor = () => {
   const taxableAmount = Math.max(0, calculatedSubtotal);
   const taxAmount = (taxableAmount * Number(gstRate || 0)) / 100;
   const grandTotal = taxableAmount + taxAmount;
-  const mandatoryAdvance = grandTotal * 0.3;
+  const mandatoryAdvance = (grandTotal * getAdvancePercentage()) / 100;
 
   const currentVersionNumber = history.length > 0 ? (history[0].versionNumber || 1) + 1 : 1;
 
@@ -625,7 +626,7 @@ export const QuotationEditor = () => {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  <span>30% Mandatory Advance:</span>
+                  <span>{getAdvancePercentage()}% Mandatory Advance:</span>
                   <span>{formatCurrency(mandatoryAdvance)}</span>
                 </div>
               </div>

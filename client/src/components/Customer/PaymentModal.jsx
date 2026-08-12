@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { POPULAR_BANKS } from '../../constants/bankUrls';
+import { getAdvancePercentage } from '../../services/pricingService';
+
+const ADVANCE_PERCENTAGE = getAdvancePercentage();
 
 export const PaymentModal = ({ order, quotation, isOpen, onClose, onPaymentSuccess }) => {
   const [paymentType, setPaymentType] = useState('ADVANCE'); // 'ADVANCE' | 'FULL'
@@ -13,7 +16,7 @@ export const PaymentModal = ({ order, quotation, isOpen, onClose, onPaymentSucce
 
   useEffect(() => {
     if (order && quotation) {
-      const adv = quotation.advanceFee || quotation.totalAmount * 0.3;
+      const adv = quotation.advanceFee || (quotation.totalAmount * ADVANCE_PERCENTAGE) / 100;
       const amount = paymentType === 'ADVANCE' ? adv : quotation.totalAmount;
       if (amount <= 100000) {
         setSelectedMethod('UPI');
@@ -37,7 +40,7 @@ export const PaymentModal = ({ order, quotation, isOpen, onClose, onPaymentSucce
     quotation?.advanceFee ||
     order?.latestQuotation?.advanceFee ||
     order?.approvedQuotation?.advanceFee ||
-    (totalAmount * 0.3);
+    (totalAmount * ADVANCE_PERCENTAGE) / 100;
 
   const fullAmount = totalAmount;
   const targetAmount = (paymentType === 'ADVANCE' || paymentType === 'ADVANCE_30') ? advanceAmount : fullAmount;
@@ -227,7 +230,7 @@ export const PaymentModal = ({ order, quotation, isOpen, onClose, onPaymentSucce
                   textAlign: 'center',
                 }}
               >
-                <div style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600' }}>30% Booking Advance</div>
+                <div style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600' }}>{ADVANCE_PERCENTAGE}% Booking Advance</div>
                 <div style={{ fontSize: '20px', fontWeight: '900', color: '#F59E0B', marginTop: '4px' }}>
                   {formatCurrency(advanceAmount)}
                 </div>

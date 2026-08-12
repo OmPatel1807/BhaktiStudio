@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { PricingEngineService } from '../services/pricingEngine.js';
 
 const prisma = new PrismaClient();
 
@@ -81,7 +82,8 @@ export const createQuotationVersion = async (req, res) => {
     const taxableAmount = Math.max(0, calculatedSubtotal);
     const taxAmount = (taxableAmount * effectiveGstRate) / 100;
     const totalAmount = taxableAmount + taxAmount;
-    const advanceFee = (totalAmount * 30) / 100; // 30% default advance
+    const { advancePayPercentage } = PricingEngineService.getSettings().pricingRules;
+    const advanceFee = (totalAmount * advancePayPercentage) / 100;
 
     // Create new QuotationVersion record
     const newQuotation = await prisma.quotationVersion.create({

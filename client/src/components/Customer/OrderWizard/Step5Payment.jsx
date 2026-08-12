@@ -1,5 +1,8 @@
 import React from 'react';
 import { formatCurrency } from '../../../utils/formatters';
+import { getAdvancePercentage } from '../../../services/pricingService';
+
+const ADVANCE_PERCENTAGE = getAdvancePercentage();
 
 export const Step5Payment = ({
   paymentPreference,
@@ -10,7 +13,7 @@ export const Step5Payment = ({
   onTriggerInstantPayment,
 }) => {
   const total = estimation?.grandTotal || 0;
-  const advance = estimation?.advanceRequired || total * 0.3;
+  const advance = estimation?.advanceRequired || (total * ADVANCE_PERCENTAGE) / 100;
 
   const targetAmount = paymentType === 'ADVANCE' ? advance : total;
   const isUpiEligible = targetAmount <= 100000;
@@ -96,7 +99,7 @@ export const Step5Payment = ({
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600' }}>30% Booking Advance</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600' }}>{ADVANCE_PERCENTAGE}% Booking Advance</div>
               <div style={{ fontSize: '22px', fontWeight: '900', color: '#F59E0B', marginTop: '4px' }}>
                 {formatCurrency(advance)}
               </div>

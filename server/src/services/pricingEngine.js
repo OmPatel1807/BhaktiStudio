@@ -47,7 +47,16 @@ export class PricingEngineService {
         const qty = Number(item.quantity || 1);
         return sum + rate * qty;
       }, 0);
-      const subtotal = equipmentSubtotal + 4500;
+
+      // Same setup-fee branching as calculateQuotation: full fee once an LED
+      // wall is involved, flat no-display fee for equipment-only orders.
+      const areaSqFt = Number(order.ledWidthFeet || 0) * Number(order.ledHeightFeet || 0);
+      const setupFee = equipmentSubtotal > 0 ? (areaSqFt > 0 ? rules.defaultSetupFee : 500.0) : 0;
+      const transportFee = order.distanceKm ? Number(order.distanceKm) * rules.defaultTransportRate : 0;
+      // Technician hours aren't captured on the order prior to a formal quotation.
+      const technicianFee = 0;
+
+      const subtotal = equipmentSubtotal + setupFee + transportFee + technicianFee;
       totalAmount = subtotal + (subtotal * rules.taxPercentage) / 100;
       advanceAmount = (totalAmount * rules.advancePayPercentage) / 100;
     }
@@ -66,12 +75,14 @@ export class PricingEngineService {
     customItems = [],
     adminDiscount = 0,
     customTaxRate = null,
+    ledBaseRate = null,
   }) {
     const config = this.getSettings();
     const rules = config.pricingRules;
 
     const areaSqFt = Number(widthFeet) * Number(heightFeet);
-    const ledBaseCost = areaSqFt * rules.baseLedSqFtRate;
+    const effectiveLedRate = ledBaseRate !== null && ledBaseRate !== undefined ? Number(ledBaseRate) : rules.baseLedSqFtRate;
+    const ledBaseCost = areaSqFt * effectiveLedRate;
 
     const customItemsTotal = customItems.reduce(
       (acc, item) => acc + (Number(item.price || item.unitRate || item.baseRate) || 0) * (Number(item.quantity) || 1),
@@ -95,7 +106,7 @@ export class PricingEngineService {
     return {
       areaSqFt,
       ratesUsed: {
-        baseLedSqFtRate: rules.baseLedSqFtRate,
+        baseLedSqFtRate: effectiveLedRate,
         setupFee,
         transportRate: rules.defaultTransportRate,
         technicianHourlyRate: rules.defaultTechnicianHourlyRate,
