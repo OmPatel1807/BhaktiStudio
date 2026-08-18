@@ -194,6 +194,33 @@ export const OrderWizard = () => {
       const selected = (availableServices || []).filter((s) => selectedServiceIds.includes(s.id));
       const finalEventType = isCustomEventType ? customEventInput || 'Custom Event' : eventDetails.eventType;
 
+      const formattedServices = (selected || []).map((s) => {
+        const isLed = Boolean(
+          s.category === 'DISPLAY' ||
+          s.name?.toUpperCase().includes('LED')
+        );
+        const w = isLed ? Number(specifications.ledWidthFeet || 12) : null;
+        const h = isLed ? Number(specifications.ledHeightFeet || 8) : null;
+        const area = (w && h) ? (w * h) : 1;
+        const unitRate = Number(s.baseRate || s.price || 0);
+        const qty = Number(s.quantity || 1);
+        const days = Number(s.days || 1);
+        const computedPrice = unitRate * area * qty * days;
+
+        return {
+          serviceId: s.id,
+          name: s.name,
+          category: s.category,
+          unitRate,
+          width: w,
+          height: h,
+          areaSqFt: isLed ? area : null,
+          quantity: qty,
+          days,
+          price: computedPrice,
+        };
+      });
+
       const res = await fetch('/api/v1/orders', {
         method: 'POST',
         headers: {
@@ -203,11 +230,7 @@ export const OrderWizard = () => {
         body: JSON.stringify({
           ...eventDetails,
           eventType: finalEventType,
-          selectedServices: (selected || []).map((s) => ({
-            serviceId: s.id,
-            name: s.name,
-            quantity: 1,
-          })),
+          selectedServices: formattedServices,
           ledWidthFeet: specifications.ledWidthFeet,
           ledHeightFeet: specifications.ledHeightFeet,
           transportDistanceKm: specifications.transportDistanceKm,

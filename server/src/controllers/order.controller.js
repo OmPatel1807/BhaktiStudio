@@ -57,26 +57,65 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
     if (catalogMatch) {
       if (catalogMatch.category === 'DISPLAY' || catalogMatch.name.toUpperCase().includes('LED')) {
         ledBaseRate = Number(catalogMatch.baseRate);
+        const areaSqFt = widthFeet * heightFeet;
+        const perSqFtRate = Number(catalogMatch.baseRate);
+        const totalLedRate = areaSqFt > 0 ? (areaSqFt * perSqFtRate) : perSqFtRate;
         itemizedList.push({
           serviceName: catalogMatch.name,
           widthFt: widthFeet,
           heightFt: heightFeet,
           quantity: 1,
-          estimatedRate: Number(catalogMatch.baseRate),
+          estimatedRate: totalLedRate,
         });
       } else {
         const qty = Number(item.quantity) || 1;
+        const days = Number(item.days) || 1;
+        const itemCost = Number(item.price || (catalogMatch.baseRate * qty * days));
         customItems.push({
           name: catalogMatch.name,
           unitRate: Number(catalogMatch.baseRate),
           quantity: qty,
+          days,
         });
         itemizedList.push({
           serviceName: catalogMatch.name,
           widthFt: null,
           heightFt: null,
           quantity: qty,
-          estimatedRate: Number(catalogMatch.baseRate),
+          estimatedRate: itemCost,
+        });
+      }
+    } else if (item.name || item.serviceName) {
+      const qty = Number(item.quantity) || 1;
+      const days = Number(item.days) || 1;
+      const w = Number(item.width || item.widthFt || 0);
+      const h = Number(item.height || item.heightFt || 0);
+      const area = (w > 0 && h > 0) ? (w * h) : 1;
+      const unitRate = Number(item.unitRate || item.baseRate || item.price || 0);
+      const totalCost = item.price ? Number(item.price) : (unitRate * area * qty * days);
+
+      if (w > 0 && h > 0) {
+        if (!ledBaseRate) ledBaseRate = unitRate;
+        itemizedList.push({
+          serviceName: item.name || item.serviceName,
+          widthFt: w,
+          heightFt: h,
+          quantity: qty,
+          estimatedRate: totalCost,
+        });
+      } else {
+        customItems.push({
+          name: item.name || item.serviceName,
+          unitRate,
+          quantity: qty,
+          days,
+        });
+        itemizedList.push({
+          serviceName: item.name || item.serviceName,
+          widthFt: null,
+          heightFt: null,
+          quantity: qty,
+          estimatedRate: totalCost,
         });
       }
     }

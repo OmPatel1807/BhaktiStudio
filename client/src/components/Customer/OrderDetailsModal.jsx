@@ -133,18 +133,36 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
         {latestQuotation && (
           <div style={{ backgroundColor: 'var(--bg-input)', padding: '18px', borderRadius: '14px', marginBottom: '24px' }}>
             <h4 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 12px 0' }}>
-              Latest Approved Quotation (V{latestQuotation.versionNumber})
+              Financial Quotation Breakdown (V{latestQuotation.versionNumber})
             </h4>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Calculated Subtotal:</span>
-              <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{formatCurrency(latestQuotation.subtotal)}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Equipment & Services Subtotal:</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{formatCurrency(equipmentTotal)}</span>
             </div>
+            {Number(latestQuotation.setupFee || 0) > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Estimated Setup Charge:</span>
+                <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(latestQuotation.setupFee)}</span>
+              </div>
+            )}
+            {Number(latestQuotation.transportFee || 0) > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Transportation Charge:</span>
+                <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(latestQuotation.transportFee)}</span>
+              </div>
+            )}
+            {Number(latestQuotation.discounts || 0) > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px', color: '#10B981' }}>
+                <span>Discount Applied:</span>
+                <span>-{formatCurrency(latestQuotation.discounts)}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>GST Tax Amount (18%):</span>
+              <span style={{ color: 'var(--text-secondary)' }}>GST (18%):</span>
               <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{formatCurrency(latestQuotation.taxAmount)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', marginBottom: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: '800' }}>Grand Total Amount:</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: '800' }}>Grand Total:</span>
               <span style={{ fontWeight: '800', color: '#C97A13' }}>{formatCurrency(latestQuotation.totalAmount)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)' }}>
