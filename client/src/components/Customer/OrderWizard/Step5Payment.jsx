@@ -12,8 +12,10 @@ export const Step5Payment = ({
   estimation,
   onTriggerInstantPayment,
 }) => {
-  const total = estimation?.grandTotal || 0;
-  const advance = estimation?.advanceRequired || (total * ADVANCE_PERCENTAGE) / 100;
+  const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+  const total = round2(estimation?.grandTotal || 0);
+  const advance = round2(estimation?.advanceRequired || (total * ADVANCE_PERCENTAGE) / 100);
+  const remaining = round2(total - advance);
 
   const targetAmount = paymentType === 'ADVANCE' ? advance : total;
   const isUpiEligible = targetAmount <= 100000;

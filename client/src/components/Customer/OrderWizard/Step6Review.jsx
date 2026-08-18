@@ -49,8 +49,11 @@ export const Step6Review = ({
         <div style={{ fontSize: '16px', marginBottom: '10px', color: 'var(--text-primary)' }}>
           <strong>Distance:</strong> {specifications?.transportDistanceKm} km
         </div>
-        <div style={{ fontSize: '20px', fontWeight: '800', color: '#C97A13', marginTop: '16px' }}>
-          Estimated Grand Total: {formatCurrency(estimation?.grandTotal || 0)}
+        <div style={{ fontSize: '20px', fontWeight: '800', color: '#C97A13', marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Estimated Grand Total: {formatCurrency(estimation?.grandTotal || 0)}</span>
+          <span style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+            30% Advance: {formatCurrency(estimation?.advanceRequired || ((estimation?.grandTotal || 0) * 0.3))}
+          </span>
         </div>
       </div>
 

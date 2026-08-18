@@ -55,6 +55,13 @@ export const Step4Pricing = ({ calculatingEstimate, estimation, selectedServices
             </div>
           )}
 
+          {Number(summary.discountAmount || summary.adminDiscount || 0) > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10B981' }}>
+              <span style={{ color: '#10B981' }}>Discount Applied:</span>
+              <strong style={{ color: '#10B981' }}>-{formatCurrency(summary.discountAmount || summary.adminDiscount)}</strong>
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: 'var(--text-secondary)' }}>GST ({summary.taxPercentage || 18}%):</span>
             <strong style={{ color: 'var(--text-primary)' }}>{formatCurrency(summary.taxAmount || 0)}</strong>

@@ -241,6 +241,8 @@ export const generateInvoice = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
+    const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+
     const quotation = order.quotations[0] || {
       subtotal: 0,
       setupFee: 0,
@@ -251,8 +253,8 @@ export const generateInvoice = async (req, res) => {
       advanceFee: 0,
     };
 
-    const totalPaid = order.payments.reduce((sum, p) => (p.status === 'PAID' ? sum + p.amount : sum), 0);
-    const balanceDue = Math.max(0, quotation.totalAmount - totalPaid);
+    const totalPaid = round2(order.payments.reduce((sum, p) => (p.status === 'PAID' ? sum + p.amount : sum), 0));
+    const balanceDue = Math.max(0, round2(quotation.totalAmount - totalPaid));
 
     return res.json({
       success: true,
@@ -270,12 +272,12 @@ export const generateInvoice = async (req, res) => {
         quotationSummary: quotation,
         paymentHistory: order.payments,
         financialSummary: {
-          subtotal: quotation.subtotal,
-          setupFee: quotation.setupFee,
-          transportFee: quotation.transportFee,
-          discounts: quotation.discounts,
-          taxAmount: quotation.taxAmount,
-          grandTotal: quotation.totalAmount,
+          subtotal: round2(quotation.subtotal),
+          setupFee: round2(quotation.setupFee),
+          transportFee: round2(quotation.transportFee),
+          discounts: round2(quotation.discounts),
+          taxAmount: round2(quotation.taxAmount),
+          grandTotal: round2(quotation.totalAmount),
           totalPaid,
           balanceDue,
         },

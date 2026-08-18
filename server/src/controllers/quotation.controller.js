@@ -53,6 +53,8 @@ export const createQuotationVersion = async (req, res) => {
       }
     }
 
+    const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+
     // LOOP 40: Always re-fetch order items from DB to compute equipment subtotal
     // This guarantees equipment costs are included even if frontend sends empty items[]
     const dbOrderItems = await prisma.orderItem.findMany({
@@ -63,38 +65,47 @@ export const createQuotationVersion = async (req, res) => {
     for (const item of dbOrderItems) {
       const rate = Number(item.finalRate || item.estimatedRate || 0);
       const qty = Number(item.quantity || 1);
-      itemsSubtotal += rate * qty;
+      const days = Number(item.days || 1);
+      itemsSubtotal += rate * qty * days;
     }
+    itemsSubtotal = round2(itemsSubtotal);
 
-    const customChargesSum = (customLineItems || []).reduce(
-      (sum, item) => sum + (Number(item.amount) || 0),
-      0
+    const customChargesSum = round2(
+      (customLineItems || []).reduce(
+        (sum, item) => sum + (Number(item.amount) || 0),
+        0
+      )
     );
 
-    const calculatedSubtotal =
+    const grossSubtotal = round2(
       itemsSubtotal +
-      Number(setupFee || 0) +
-      Number(transportFee || 0) +
-      Number(technicianFee || 0) +
-      customChargesSum -
-      Number(discounts || 0);
+        Number(setupFee || 0) +
+        Number(transportFee || 0) +
+        Number(technicianFee || 0) +
+        customChargesSum
+    );
 
-    const taxableAmount = Math.max(0, calculatedSubtotal);
-    const taxAmount = (taxableAmount * effectiveGstRate) / 100;
-    const totalAmount = taxableAmount + taxAmount;
+    const discountVal = Number(discounts || 0);
+    const discountAmount = req.body.discountType === 'PERCENT'
+      ? round2(itemsSubtotal * (discountVal / 100))
+      : round2(discountVal);
+
+    const taxableAmount = Math.max(0, round2(grossSubtotal - discountAmount));
+    const taxAmount = round2((taxableAmount * effectiveGstRate) / 100);
+    const totalAmount = round2(taxableAmount + taxAmount);
     const { advancePayPercentage } = PricingEngineService.getSettings().pricingRules;
-    const advanceFee = (totalAmount * advancePayPercentage) / 100;
+    const advanceFee = round2((totalAmount * advancePayPercentage) / 100);
 
     // Create new QuotationVersion record
     const newQuotation = await prisma.quotationVersion.create({
       data: {
         orderId,
         versionNumber: nextVersionNumber,
-        subtotal: calculatedSubtotal,
-        setupFee: Number(setupFee || 0),
-        transportFee: Number(transportFee || 0),
-        technicianFee: Number(technicianFee || 0),
-        discounts: Number(discounts || 0),
+        subtotal: grossSubtotal,
+        setupFee: round2(Number(setupFee || 0)),
+        transportFee: round2(Number(transportFee || 0)),
+        technicianFee: round2(Number(technicianFee || 0)),
+        discounts: discountAmount,
         taxAmount,
         totalAmount,
         advanceFee,

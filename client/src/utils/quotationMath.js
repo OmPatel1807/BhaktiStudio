@@ -8,17 +8,22 @@
 
 import { calculateEstimatedPricing, getAdvancePercentage, getTaxPercentage } from '../services/pricingService';
 
+const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+
 /**
  * Compute the equipment subtotal from order items.
  * @param {Array} orderItems - Array of order item objects
  * @returns {number} Equipment subtotal
  */
 export function computeEquipmentSubtotal(orderItems = []) {
-  return orderItems.reduce((sum, item) => {
-    const rate = Number(item.finalRate || item.estimatedRate || 0);
-    const qty = Number(item.quantity || 1);
-    return sum + rate * qty;
-  }, 0);
+  return round2(
+    orderItems.reduce((sum, item) => {
+      const rate = Number(item.finalRate || item.estimatedRate || 0);
+      const qty = Number(item.quantity || 1);
+      const days = Number(item.days || 1);
+      return sum + rate * qty * days;
+    }, 0)
+  );
 }
 
 /**
@@ -35,18 +40,18 @@ export function rehydrateQuotation(quotation, orderItems = []) {
 
   const equipmentSubtotal = computeEquipmentSubtotal(orderItems);
 
-  const setupFee = Number(quotation.setupFee || 0);
-  const transportFee = Number(quotation.transportFee || 0);
-  const technicianFee = Number(quotation.technicianFee || 0);
-  const discounts = Number(quotation.discounts || 0);
+  const setupFee = round2(quotation.setupFee || 0);
+  const transportFee = round2(quotation.transportFee || 0);
+  const technicianFee = round2(quotation.technicianFee || 0);
+  const discounts = round2(quotation.discounts || 0);
 
-  const additionalFeesTotal = setupFee + transportFee + technicianFee;
-  const netSubtotal = equipmentSubtotal + additionalFeesTotal - discounts;
-  const taxableAmount = Math.max(0, netSubtotal);
+  const additionalFeesTotal = round2(setupFee + transportFee + technicianFee);
+  const grossSubtotal = round2(equipmentSubtotal + additionalFeesTotal);
+  const taxableAmount = Math.max(0, round2(grossSubtotal - discounts));
 
   // Detect the GST rate: reverse-engineer from stored values, fallback to settings
-  const storedSubtotal = Number(quotation.subtotal || 0);
-  const storedTax = Number(quotation.taxAmount || 0);
+  const storedSubtotal = round2(quotation.subtotal || 0);
+  const storedTax = round2(quotation.taxAmount || 0);
   let gstRate = getTaxPercentage();
   if (storedSubtotal > 0 && storedTax > 0) {
     const inferredRate = (storedTax / storedSubtotal) * 100;
@@ -55,31 +60,36 @@ export function rehydrateQuotation(quotation, orderItems = []) {
     }
   }
 
-  const taxAmount = (taxableAmount * gstRate) / 100;
-  const totalAmount = taxableAmount + taxAmount;
-  const advanceFee = (totalAmount * getAdvancePercentage()) / 100;
+  const taxAmount = round2((taxableAmount * gstRate) / 100);
+  const totalAmount = round2(taxableAmount + taxAmount);
+  const advanceFee = round2((totalAmount * getAdvancePercentage()) / 100);
+  const remainingFee = round2(totalAmount - advanceFee);
 
-  // Check if the stored values already match the calculated values (within ₹1 tolerance)
-  const storedTotal = Number(quotation.totalAmount || 0);
+  // Check if the stored values already match the calculated values
+  const storedTotal = round2(quotation.totalAmount || 0);
   const isAlreadyCorrect =
-    Math.abs(storedTotal - totalAmount) < 1 &&
-    Math.abs(storedSubtotal - netSubtotal) < 1;
+    Math.abs(storedTotal - totalAmount) < 0.01 &&
+    Math.abs(storedSubtotal - grossSubtotal) < 0.01;
 
   if (isAlreadyCorrect) {
     // DB values are correct — return as-is to avoid floating point drift
     return {
       ...quotation,
-      advanceFee: quotation.advanceFee || advanceFee,
+      subtotal: storedSubtotal,
+      totalAmount: storedTotal,
+      advanceFee: quotation.advanceFee ? round2(quotation.advanceFee) : advanceFee,
+      remainingFee: round2((quotation.totalAmount || totalAmount) - (quotation.advanceFee || advanceFee)),
     };
   }
 
   // DB values are stale — return rehydrated version
   return {
     ...quotation,
-    subtotal: netSubtotal,
+    subtotal: grossSubtotal,
     taxAmount,
     totalAmount,
     advanceFee,
+    remainingFee,
   };
 }
 

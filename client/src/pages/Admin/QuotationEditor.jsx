@@ -113,23 +113,44 @@ export const QuotationEditor = () => {
     setCustomLineItems(customLineItems.filter((item) => item.id !== id));
   };
 
+  const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+
+  const [discountType, setDiscountType] = useState('FIXED');
+
   // Real-Time Derived Calculations
-  const itemsSubtotal = editedItems.reduce(
-    (sum, item) => sum + (Number(item.finalRate || item.estimatedRate) || 0) * (Number(item.quantity) || 1),
-    0
+  const itemsSubtotal = round2(
+    editedItems.reduce(
+      (sum, item) =>
+        sum +
+        (Number(item.finalRate || item.estimatedRate) || 0) *
+          (Number(item.quantity) || 1) *
+          (Number(item.days) || 1),
+      0
+    )
   );
 
-  const customChargesSum = customLineItems.reduce(
-    (sum, item) => sum + (Number(item.amount) || 0),
-    0
+  const customChargesSum = round2(
+    customLineItems.reduce(
+      (sum, item) => sum + (Number(item.amount) || 0),
+      0
+    )
   );
 
-  const additionalFeesTotal = Number(setupFee || 0) + Number(transportFee || 0) + Number(technicianFee || 0) + customChargesSum;
-  const calculatedSubtotal = itemsSubtotal + additionalFeesTotal - Number(discounts || 0);
-  const taxableAmount = Math.max(0, calculatedSubtotal);
-  const taxAmount = (taxableAmount * Number(gstRate || 0)) / 100;
-  const grandTotal = taxableAmount + taxAmount;
-  const mandatoryAdvance = (grandTotal * getAdvancePercentage()) / 100;
+  const additionalFeesTotal = round2(
+    Number(setupFee || 0) + Number(transportFee || 0) + Number(technicianFee || 0) + customChargesSum
+  );
+  const grossSubtotal = round2(itemsSubtotal + additionalFeesTotal);
+
+  const discountVal = Number(discounts || 0);
+  const discountAmount = discountType === 'PERCENT'
+    ? round2(itemsSubtotal * (discountVal / 100))
+    : round2(discountVal);
+
+  const taxableAmount = Math.max(0, round2(grossSubtotal - discountAmount));
+  const taxAmount = round2((taxableAmount * Number(gstRate || 0)) / 100);
+  const grandTotal = round2(taxableAmount + taxAmount);
+  const mandatoryAdvance = round2((grandTotal * getAdvancePercentage()) / 100);
+  const remainingBalance = round2(grandTotal - mandatoryAdvance);
 
   const currentVersionNumber = history.length > 0 ? (history[0].versionNumber || 1) + 1 : 1;
 
