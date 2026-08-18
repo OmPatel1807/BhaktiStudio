@@ -65,7 +65,7 @@ function NavigationBar() {
 
           {/* DESKTOP ROLE-BASED NAVIGATION LINKS */}
           {!isAuthPage && (
-            <nav className="hidden-mobile" style={{ display: 'flex', gap: '12px', marginLeft: '8px' }}>
+            <nav className="hidden-mobile" style={{ alignItems: 'center', gap: '12px', marginLeft: '8px' }}>
               {/* CUSTOMER & PUBLIC LINKS */}
               {(!isAuthenticated || user?.role === 'CUSTOMER') && (
                 <>
@@ -75,11 +75,12 @@ function NavigationBar() {
                       style={{
                         color: location.pathname === '/customer/new-order' ? '#C97A13' : 'var(--text-primary)',
                         textDecoration: 'none',
-                        fontSize: '16px',
+                        fontSize: '15px',
                         fontWeight: '700',
                         padding: '8px 14px',
                         borderRadius: '10px',
                         backgroundColor: location.pathname === '/customer/new-order' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       🛒 Order Wizard
@@ -91,11 +92,12 @@ function NavigationBar() {
                       style={{
                         color: location.pathname === '/customer/dashboard' ? '#C97A13' : 'var(--text-primary)',
                         textDecoration: 'none',
-                        fontSize: '16px',
+                        fontSize: '15px',
                         fontWeight: '700',
                         padding: '8px 14px',
                         borderRadius: '10px',
                         backgroundColor: location.pathname === '/customer/dashboard' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       📜 Customer Portal
@@ -114,6 +116,7 @@ function NavigationBar() {
                       border: '1px solid #C39B5A',
                       boxShadow: location.pathname === '/join-crew' ? '0 4px 12px rgba(195, 155, 90, 0.3)' : 'none',
                       transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     💼 Join as Crew
@@ -128,11 +131,12 @@ function NavigationBar() {
                   style={{
                     color: location.pathname === '/worker/dashboard' ? '#C97A13' : 'var(--text-primary)',
                     textDecoration: 'none',
-                    fontSize: '16px',
+                    fontSize: '15px',
                     fontWeight: '700',
                     padding: '8px 14px',
                     borderRadius: '10px',
                     backgroundColor: location.pathname === '/worker/dashboard' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   👷 Worker Portal
@@ -147,11 +151,12 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/analytics' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
                       backgroundColor: location.pathname === '/admin/analytics' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     📊 Analytics
@@ -161,11 +166,12 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/orders' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
                       backgroundColor: location.pathname === '/admin/orders' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     📦 Orders
@@ -175,11 +181,12 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/audit-logs' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
                       backgroundColor: location.pathname === '/admin/audit-logs' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     🛡️ Audit Logs
@@ -189,11 +196,12 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/catalog' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
                       backgroundColor: location.pathname === '/admin/catalog' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     👑 Catalog
@@ -203,11 +211,12 @@ function NavigationBar() {
                     style={{
                       color: location.pathname === '/admin/workers' ? '#C97A13' : 'var(--text-primary)',
                       textDecoration: 'none',
-                      fontSize: '16px',
+                      fontSize: '15px',
                       fontWeight: '700',
                       padding: '8px 14px',
                       borderRadius: '10px',
                       backgroundColor: location.pathname === '/admin/workers' ? 'rgba(201, 122, 19, 0.15)' : 'transparent',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     🛠️ Workers
@@ -219,7 +228,7 @@ function NavigationBar() {
         </div>
 
         {/* RIGHT DESKTOP CONTROLS */}
-        <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="hidden-mobile" style={{ alignItems: 'center', gap: '16px' }}>
           <button
             type="button"
             onClick={toggleTheme}
@@ -235,6 +244,7 @@ function NavigationBar() {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              whiteSpace: 'nowrap',
             }}
           >
             {isDark ? '☀️ Light' : '🌙 Dark'}
@@ -244,13 +254,13 @@ function NavigationBar() {
 
           {isAuthenticated ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', maxWidth: '140px' }}>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', textAlign: 'right' }}>
                   {user.name}
                 </span>
                 <span
                   style={{
-                    fontSize: '11px',
+                    fontSize: '10px',
                     backgroundColor: 'rgba(201, 122, 19, 0.2)',
                     color: '#C97A13',
                     padding: '2px 8px',
@@ -271,9 +281,10 @@ function NavigationBar() {
                   border: '1px solid var(--border-color)',
                   padding: '8px 14px',
                   borderRadius: '10px',
-                  fontSize: '15px',
+                  fontSize: '14px',
                   fontWeight: '700',
                   cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Sign Out
@@ -292,6 +303,7 @@ function NavigationBar() {
                   fontSize: '15px',
                   fontWeight: '700',
                   cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Sign In
@@ -300,12 +312,29 @@ function NavigationBar() {
           )}
         </div>
 
-        {/* MOBILE HAMBURGER BUTTON TOGGLE */}
-        <div className="show-mobile-only" style={{ display: 'none', alignItems: 'center', gap: '8px', flexShrink: 0, paddingRight: '2px' }}>
+        {/* MOBILE HAMBURGER BUTTON & TOP BAR CONTROLS */}
+        <div className="show-mobile-only" style={{ alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              backgroundColor: 'var(--bg-input)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '10px',
+              padding: '8px 12px',
+              fontSize: '14px',
+              fontWeight: '700',
+              cursor: 'pointer',
+            }}
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
           {isAuthenticated && <NotificationBell />}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle Navigation Menu"
             style={{
               backgroundColor: 'var(--bg-input)',
               color: 'var(--text-primary)',
@@ -674,7 +703,7 @@ function MainApp() {
           box-sizing: inherit;
         }
 
-        @media (max-width: 767px) {
+        @media (max-width: 1023px) {
           .hidden-mobile {
             display: none !important;
           }
@@ -682,7 +711,7 @@ function MainApp() {
             display: flex !important;
           }
         }
-        @media (min-width: 768px) {
+        @media (min-width: 1024px) {
           .hidden-mobile {
             display: flex !important;
           }

@@ -173,7 +173,7 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
         )}
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+        <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end w-full mt-4">
           <button
             type="button"
             onClick={onClose}
@@ -181,10 +181,12 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
               backgroundColor: 'var(--bg-input)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border-color)',
-              padding: '10px 20px',
-              borderRadius: '10px',
+              padding: '12px 20px',
+              borderRadius: '12px',
               fontWeight: '700',
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              textAlign: 'center',
             }}
           >
             Close
@@ -200,11 +202,13 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
                 backgroundColor: '#10B981',
                 color: '#FFFFFF',
                 fontWeight: '900',
-                padding: '10px 22px',
-                borderRadius: '10px',
+                padding: '12px 22px',
+                borderRadius: '12px',
                 border: 'none',
                 cursor: 'pointer',
                 boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                whiteSpace: 'nowrap',
+                textAlign: 'center',
               }}
             >
               ✅ Mark Event Completed
@@ -221,11 +225,13 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
                 backgroundColor: '#F59E0B',
                 color: '#0F172A',
                 fontWeight: '900',
-                padding: '10px 22px',
-                borderRadius: '10px',
+                padding: '12px 22px',
+                borderRadius: '12px',
                 border: 'none',
                 cursor: 'pointer',
                 boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                whiteSpace: 'nowrap',
+                textAlign: 'center',
               }}
             >
               💳 Pay Online Now

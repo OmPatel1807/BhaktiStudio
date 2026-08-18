@@ -263,9 +263,7 @@ export const CustomerDashboard = () => {
                       <div style={{ fontSize: '28px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
                         {formatCurrency(displayTotal)}
                       </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+                    <div className="flex flex-col sm:flex-row gap-3 items-center w-full">
                       {ord.paymentStatus !== 'PAID' && (
                         <button
                           type="button"
@@ -274,8 +272,8 @@ export const CustomerDashboard = () => {
                             setPaymentModalState({ isOpen: true, order: ord, quotation: latestQuotation });
                           }}
                           style={{
+                            width: '100%',
                             flex: 1,
-                            minWidth: '140px',
                             backgroundColor: '#F59E0B',
                             color: '#0F172A',
                             padding: '12px 18px',
@@ -296,14 +294,14 @@ export const CustomerDashboard = () => {
                         type="button"
                         onClick={() => setSelectedOrder(ord)}
                         style={{
+                          width: '100%',
                           flex: 1,
-                          minWidth: '120px',
                           backgroundColor: 'var(--bg-input)',
                           color: 'var(--text-primary)',
                           border: '1px solid var(--border-color)',
                           padding: '12px 18px',
                           borderRadius: '14px',
-                          fontWeight: '700',
+                          fontWeight: '800',
                           fontSize: '15px',
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
@@ -314,6 +312,7 @@ export const CustomerDashboard = () => {
                       </button>
                     </div>
                   </div>
+                </div>
                 </div>
               );
             })}
