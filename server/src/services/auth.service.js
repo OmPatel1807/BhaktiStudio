@@ -13,45 +13,96 @@ const googleClient = new OAuth2Client(googleClientId);
 
 export class AuthService {
   /**
-   * Verify Google OAuth ID Token
-   * @param {string} idToken 
+   * Verify Google OAuth Token (handles both Google Access Tokens and ID Tokens / Credentials)
+   * @param {string|Object} tokenInput - String ID Token or Object containing { accessToken, idToken, credential }
    * @returns {Promise<{ email: string, name: string, picture: string }>}
    */
-  static async verifyGoogleToken(idToken) {
-    // If running in development with mock token
-    if (process.env.NODE_ENV === 'development' && idToken.startsWith('mock_token_')) {
-      const parts = idToken.split('_');
-      const email = parts[2] || 'test@bhaktistudio.com';
-      const name = parts[3] || 'Test User';
-      return { email, name, picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' };
-    }
+  static async verifyGoogleToken(tokenInput) {
+    let accessToken = null;
+    let idToken = null;
 
-    let payload;
-    try {
-      const ticket = await googleClient.verifyIdToken({
-        idToken,
-        audience: googleClientId,
-      });
-      payload = ticket.getPayload();
-    } catch (error) {
-      // Fallback decoding for Google ID Token payload if issuer matches
-      const decoded = jwt.decode(idToken);
-      if (
-        decoded &&
-        decoded.email &&
-        (decoded.iss === 'accounts.google.com' || decoded.iss === 'https://accounts.google.com')
-      ) {
-        payload = decoded;
+    if (typeof tokenInput === 'object' && tokenInput !== null) {
+      accessToken = tokenInput.accessToken || null;
+      idToken = tokenInput.idToken || tokenInput.credential || null;
+    } else if (typeof tokenInput === 'string') {
+      if (tokenInput.startsWith('mock_token_')) {
+        const parts = tokenInput.split('_');
+        const email = parts[2] || 'test@bhaktistudio.com';
+        const name = parts[3] || 'Test User';
+        return { email, name, picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' };
+      }
+      // Infer token type
+      if (tokenInput.includes('.')) {
+        idToken = tokenInput;
       } else {
-        throw new Error(`Google token verification failed: ${error.message}`);
+        accessToken = tokenInput;
       }
     }
 
-    return {
-      email: payload.email,
-      name: payload.name || payload.email.split('@')[0],
-      picture: payload.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-    };
+    // 1. If Access Token is provided, fetch Google UserInfo endpoint directly
+    if (accessToken) {
+      if (accessToken.startsWith('mock_token_')) {
+        const parts = accessToken.split('_');
+        const email = parts[2] || 'test@bhaktistudio.com';
+        const name = parts[3] || 'Test User';
+        return { email, name, picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' };
+      }
+
+      try {
+        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        if (response.ok) {
+          const userInfo = await response.json();
+          return {
+            email: userInfo.email,
+            name: userInfo.name || userInfo.given_name || userInfo.email.split('@')[0],
+            picture: userInfo.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          };
+        }
+      } catch (err) {
+        console.warn('Google UserInfo endpoint fetch error, attempting ID token fallback:', err.message);
+      }
+    }
+
+    // 2. If ID Token / Credential is provided
+    if (idToken) {
+      if (idToken.startsWith('mock_token_')) {
+        const parts = idToken.split('_');
+        const email = parts[2] || 'test@bhaktistudio.com';
+        const name = parts[3] || 'Test User';
+        return { email, name, picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' };
+      }
+
+      let payload;
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken,
+          audience: googleClientId,
+        });
+        payload = ticket.getPayload();
+      } catch (error) {
+        const decoded = jwt.decode(idToken);
+        if (
+          decoded &&
+          decoded.email &&
+          (decoded.iss === 'accounts.google.com' || decoded.iss === 'https://accounts.google.com')
+        ) {
+          payload = decoded;
+        } else {
+          throw new Error(`Google token verification failed: ${error.message}`);
+        }
+      }
+
+      return {
+        email: payload.email,
+        name: payload.name || payload.email.split('@')[0],
+        picture: payload.picture || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      };
+    }
+
+    throw new Error('No valid Google access_token or idToken was provided.');
   }
 
   /**

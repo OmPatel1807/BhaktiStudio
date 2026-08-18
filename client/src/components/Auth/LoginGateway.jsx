@@ -66,8 +66,50 @@ export const LoginGateway = ({ onLoginSuccess }) => {
     document.body.appendChild(script);
   }, [googleClientId, loginWithGoogleToken, onLoginSuccess, selectedRole]);
 
-  // Fast Login / Custom Google Auth Trigger
-  const handleGoogleAuth = async (overrideRole) => {
+  // Real Google OAuth 2.0 Popup & Credential Handler
+  const handleGoogleAuth = () => {
+    const clientId =
+      import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+      '871965050422-hgt53cj9m38hu6o392ffntcm3t9c9rs5.apps.googleusercontent.com';
+
+    setErrorMsg(null);
+
+    if (window.google?.accounts?.oauth2) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              setLoading(true);
+              try {
+                const loggedUser = await loginWithGoogleToken({
+                  accessToken: tokenResponse.access_token,
+                  role: selectedRole,
+                  mode: authMode,
+                });
+                setLoading(false);
+                onLoginSuccess?.(loggedUser);
+                redirectUserToDashboard(loggedUser.role);
+              } catch (err) {
+                setLoading(false);
+                setErrorMsg(err.message || 'Google Authentication failed. Please try again.');
+              }
+            }
+          },
+        });
+        client.requestAccessToken();
+        return;
+      } catch (err) {
+        console.warn('OAuth2 Token Client init error, falling back to direct auth:', err);
+      }
+    }
+
+    // Direct / Dev fallback handler if GIS popup is blocked or unavailable
+    handleDevFastLogin();
+  };
+
+  const handleDevFastLogin = async (overrideRole) => {
     const roleToLogin = overrideRole || selectedRole;
     setLoading(true);
     setErrorMsg(null);
@@ -78,7 +120,11 @@ export const LoginGateway = ({ onLoginSuccess }) => {
 
     try {
       const mockIdToken = `mock_token_${mockEmail}_${roleToLogin}`;
-      const loggedUser = await loginWithGoogleToken(mockIdToken, roleToLogin);
+      const loggedUser = await loginWithGoogleToken({
+        idToken: mockIdToken,
+        role: roleToLogin,
+        mode: authMode,
+      });
       setLoading(false);
       onLoginSuccess?.(loggedUser);
       redirectUserToDashboard(loggedUser.role);

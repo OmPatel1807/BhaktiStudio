@@ -10,20 +10,27 @@ const router = Router();
  */
 router.post('/google', async (req, res, next) => {
   try {
-    const { idToken, requestedRole = 'CUSTOMER' } = req.body;
-    if (!idToken) {
+    const { accessToken, idToken, credential, role, requestedRole = 'CUSTOMER', mode = 'LOGIN' } = req.body;
+    const targetRole = role || requestedRole;
+
+    if (!accessToken && !idToken && !credential) {
       return res.status(400).json({
         success: false,
-        message: 'Google ID Token is required.',
+        message: 'Google Access Token or ID Token is required.',
       });
     }
 
-    const googleUser = await AuthService.verifyGoogleToken(idToken);
+    const googleUser = await AuthService.verifyGoogleToken({
+      accessToken,
+      idToken: idToken || credential,
+    });
+
     const result = await AuthService.authenticateUserWithGoogle({
       email: googleUser.email,
       name: googleUser.name,
       picture: googleUser.picture,
-      requestedRole,
+      requestedRole: targetRole,
+      mode,
     });
 
     return res.json({

@@ -25,14 +25,30 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Google OAuth Login Request to Backend API
-   * @param {string} idToken 
+   * @param {string|Object} payload - Token string or payload object containing { accessToken, idToken, role, mode }
    * @param {'CUSTOMER' | 'WORKER' | 'ADMIN'} requestedRole 
    */
-  const loginWithGoogleToken = async (idToken, requestedRole = 'CUSTOMER') => {
+  const loginWithGoogleToken = async (payload, requestedRole = 'CUSTOMER') => {
+    let body = {};
+    if (typeof payload === 'object' && payload !== null) {
+      body = {
+        accessToken: payload.accessToken,
+        idToken: payload.idToken || payload.credential,
+        requestedRole: payload.role || requestedRole,
+        mode: payload.mode || 'LOGIN',
+      };
+    } else {
+      body = {
+        idToken: payload,
+        requestedRole,
+        mode: 'LOGIN',
+      };
+    }
+
     const response = await fetch('/api/v1/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken, requestedRole }),
+      body: JSON.stringify(body),
     });
 
     const data = await parseJsonResponse(response);
