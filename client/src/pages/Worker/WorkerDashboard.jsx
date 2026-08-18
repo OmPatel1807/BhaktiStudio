@@ -219,21 +219,30 @@ export const WorkerDashboard = () => {
                           🛠️ Required Equipment Checklist:
                         </div>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {ord.orderItems.map((item) => (
-                            <span
-                              key={item.id}
-                              style={{
-                                backgroundColor: '#1E293B',
-                                color: '#CBD5E1',
-                                fontSize: '12px',
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                border: '1px solid #475569',
-                              }}
-                            >
-                              • {item.serviceName} ({item.quantity}x {item.widthFt ? `${item.widthFt}x${item.heightFt}ft` : ''})
-                            </span>
-                          ))}
+                          {ord.orderItems.map((item) => {
+                            const hasDimensions = Boolean(item.widthFt && item.heightFt);
+                            const area = hasDimensions ? (item.widthFt * item.heightFt) : null;
+                            const estPanels = area ? Math.ceil(area / 4) : null;
+                            const dimText = hasDimensions
+                              ? `${item.widthFt}×${item.heightFt}ft = ${area} sq ft${estPanels ? ` (~${estPanels} panels)` : ''}`
+                              : '';
+
+                            return (
+                              <span
+                                key={item.id}
+                                style={{
+                                  backgroundColor: '#1E293B',
+                                  color: '#CBD5E1',
+                                  fontSize: '12px',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #475569',
+                                }}
+                              >
+                                • {item.serviceName} ({item.quantity}x {dimText})
+                              </span>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

@@ -10,6 +10,23 @@ import { calculateEstimatedPricing, getAdvancePercentage, getTaxPercentage } fro
 
 const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
 
+export function computeLineItemPrice(item) {
+  if (!item) return 0;
+  const unitRate = Number(item.unitRate || item.baseRate || item.price || item.estimatedRate || item.finalRate || 0);
+  const days = Number(item.days) || 1;
+  const qty = Number(item.quantity) || 1;
+  const width = Number(item.width || item.widthFt || 0);
+  const height = Number(item.height || item.heightFt || 0);
+
+  if (width > 0 && height > 0) {
+    const area = width * height;
+    const isTotalRate = unitRate > 500 && area > 1;
+    const itemTotal = isTotalRate ? unitRate : (unitRate * area);
+    return round2(itemTotal * days * qty);
+  }
+  return round2(unitRate * qty * days);
+}
+
 /**
  * Compute the equipment subtotal from order items.
  * @param {Array} orderItems - Array of order item objects
@@ -17,12 +34,7 @@ const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
  */
 export function computeEquipmentSubtotal(orderItems = []) {
   return round2(
-    orderItems.reduce((sum, item) => {
-      const rate = Number(item.finalRate || item.estimatedRate || 0);
-      const qty = Number(item.quantity || 1);
-      const days = Number(item.days || 1);
-      return sum + rate * qty * days;
-    }, 0)
+    orderItems.reduce((sum, item) => sum + computeLineItemPrice(item), 0)
   );
 }
 
