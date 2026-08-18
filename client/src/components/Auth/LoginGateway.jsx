@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { USER_ROLES } from '../../types';
@@ -6,11 +6,11 @@ import { Logo } from '../Common/Logo';
 
 export const LoginGateway = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
+  const [authMode, setAuthMode] = useState('LOGIN'); // 'LOGIN' | 'SIGNUP'
   const [selectedRole, setSelectedRole] = useState(USER_ROLES.CUSTOMER);
   const [errorMsg, setErrorMsg] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { loginWithGoogleToken, logout, isAuthenticated, user } = useAuth();
-  const googleBtnRef = useRef(null);
+  const { loginWithGoogleToken, isAuthenticated, user } = useAuth();
 
   const googleClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
@@ -27,25 +27,26 @@ export const LoginGateway = ({ onLoginSuccess }) => {
     }
   };
 
-  // LOOP 21: AUTOMATIC REDIRECT GUARD FOR ALREADY AUTHENTICATED USERS
+  // AUTOMATIC REDIRECT GUARD FOR ALREADY AUTHENTICATED USERS
   useEffect(() => {
     if (isAuthenticated && user?.role) {
       redirectUserToDashboard(user.role);
     }
   }, [isAuthenticated, user]);
 
-  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
-
-  // Load Google Identity Services script & render official Google SSO button
+  // Load Google Identity Services script for token handling without auto-prompting One-Tap iframe
   useEffect(() => {
+    if (window.google?.accounts?.id) return;
+
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
     script.onload = () => {
-      if (window.google?.accounts?.id && googleBtnRef.current) {
+      if (window.google?.accounts?.id) {
         window.google.accounts.id.initialize({
           client_id: googleClientId,
+          auto_select: false,
           callback: async (response) => {
             setLoading(true);
             setErrorMsg(null);
@@ -60,34 +61,13 @@ export const LoginGateway = ({ onLoginSuccess }) => {
             }
           },
         });
-
-        // Render official Google Sign-In Button with standardized 320px width & filled_blue theme
-        try {
-          window.google.accounts.id.renderButton(googleBtnRef.current, {
-            theme: 'filled_blue',
-            size: 'large',
-            shape: 'pill',
-            width: 320,
-            text: 'continue_with',
-            logo_alignment: 'left',
-          });
-          setIsGoogleLoaded(true);
-        } catch (e) {
-          console.warn('Failed rendering GIS button:', e);
-        }
       }
     };
     document.body.appendChild(script);
+  }, [googleClientId, loginWithGoogleToken, onLoginSuccess, selectedRole]);
 
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  }, [selectedRole]);
-
-  // LOOP 21: DEV QUICK LOGIN HANDLER WITH IMMEDIATE DASHBOARD REDIRECT
-  const handleDevFastLogin = async (overrideRole) => {
+  // Fast Login / Custom Google Auth Trigger
+  const handleGoogleAuth = async (overrideRole) => {
     const roleToLogin = overrideRole || selectedRole;
     setLoading(true);
     setErrorMsg(null);
@@ -133,13 +113,15 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           boxShadow: '0 25px 40px -10px rgba(0, 0, 0, 0.12)',
         }}
       >
-        {/* Header Branding with Custom Vector Emblem Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ marginBottom: '20px' }}>
+        {/* Header Branding */}
+        <div style={{ textAlign: 'center', marginBottom: '28px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ marginBottom: '16px' }}>
             <Logo size="large" layout="vertical" />
           </div>
-          <p style={{ fontSize: '15px', fontWeight: '500', color: 'var(--text-secondary)', margin: 0 }}>
-            Select your account portal to proceed
+          <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-secondary)', margin: 0 }}>
+            {authMode === 'LOGIN'
+              ? 'Welcome back! Select your portal to sign in'
+              : 'Join Bhakti Studio! Select your account type to register'}
           </p>
         </div>
 
@@ -152,32 +134,101 @@ export const LoginGateway = ({ onLoginSuccess }) => {
               color: '#DC2626',
               padding: '14px 18px',
               borderRadius: '14px',
-              fontSize: '15px',
+              fontSize: '14px',
               fontWeight: '600',
-              marginBottom: '28px',
+              marginBottom: '24px',
             }}
           >
             ⚠️ {errorMsg}
           </div>
         )}
 
+        {/* Segmented Sign In / Sign Up Mode Switcher Tabs */}
+        <div
+          className="flex bg-slate-900/80 light:bg-[#E6DFD5] p-1 rounded-xl mb-5 w-full border border-slate-700/50 light:border-[#D6CEC5]"
+          style={{
+            display: 'flex',
+            backgroundColor: 'var(--bg-input)',
+            padding: '4px',
+            borderRadius: '14px',
+            marginBottom: '24px',
+            width: '100%',
+            border: '1px solid var(--border-color)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMode('LOGIN');
+              setErrorMsg(null);
+            }}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              authMode === 'LOGIN'
+                ? 'bg-amber-500 text-slate-950 shadow-md'
+                : 'text-slate-400 light:text-slate-600 hover:text-slate-200'
+            }`}
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              borderRadius: '10px',
+              fontSize: '14px',
+              fontWeight: '800',
+              border: 'none',
+              cursor: 'pointer',
+              backgroundColor: authMode === 'LOGIN' ? '#F59E0B' : 'transparent',
+              color: authMode === 'LOGIN' ? '#0F172A' : 'var(--text-secondary)',
+              boxShadow: authMode === 'LOGIN' ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMode('SIGNUP');
+              setErrorMsg(null);
+            }}
+            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              authMode === 'SIGNUP'
+                ? 'bg-amber-500 text-slate-950 shadow-md'
+                : 'text-slate-400 light:text-slate-600 hover:text-slate-200'
+            }`}
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              borderRadius: '10px',
+              fontSize: '14px',
+              fontWeight: '800',
+              border: 'none',
+              cursor: 'pointer',
+              backgroundColor: authMode === 'SIGNUP' ? '#F59E0B' : 'transparent',
+              color: authMode === 'SIGNUP' ? '#0F172A' : 'var(--text-secondary)',
+              boxShadow: authMode === 'SIGNUP' ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            Create Account
+          </button>
+        </div>
+
         {/* Role Selection Label */}
         <label
           style={{
             display: 'block',
-            fontSize: '13px',
+            fontSize: '12px',
             fontWeight: '800',
             color: '#C97A13',
             letterSpacing: '1.5px',
             textTransform: 'uppercase',
-            marginBottom: '14px',
+            marginBottom: '12px',
           }}
         >
-          Select Role Portal:
+          {authMode === 'LOGIN' ? 'Select Role Portal:' : 'Select Account Type:'}
         </label>
 
         {/* Role Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {[
             { role: USER_ROLES.CUSTOMER, label: 'Customer', icon: '👤' },
             { role: USER_ROLES.WORKER, label: 'Worker', icon: '🛠️' },
@@ -196,48 +247,28 @@ export const LoginGateway = ({ onLoginSuccess }) => {
                   backgroundColor: isSelected ? 'rgba(201, 122, 19, 0.15)' : 'var(--bg-input)',
                   border: isSelected ? '2px solid #C97A13' : '1px solid var(--border-color)',
                   borderRadius: '16px',
-                  padding: '18px 10px',
+                  padding: '16px 10px',
                   cursor: 'pointer',
                   color: isSelected ? '#C97A13' : 'var(--text-primary)',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                 }}
               >
-                <span style={{ fontSize: '24px' }}>{item.icon}</span>
-                <span style={{ fontSize: '15px', fontWeight: '700' }}>{item.label}</span>
+                <span style={{ fontSize: '22px' }}>{item.icon}</span>
+                <span style={{ fontSize: '14px', fontWeight: '700' }}>{item.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Official Google Sign-In Button Container */}
-        <div
-          className="w-full flex items-center justify-center my-5 min-h-[50px] overflow-visible"
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '20px 0',
-            minHeight: '50px',
-            overflow: 'visible',
-          }}
-        >
-          <div
-            ref={googleBtnRef}
-            id="google-login-btn"
-            className="w-full flex justify-center scale-100 sm:scale-105 transition-transform"
-            style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
-          />
-        </div>
-
-        {/* Custom Branded Fallback / Direct Button Option */}
+        {/* Single Polished Custom Branded Google Button (No One-Tap Iframe) */}
         <button
           type="button"
-          onClick={() => handleDevFastLogin()}
+          disabled={loading}
+          onClick={() => handleGoogleAuth()}
           className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-sm rounded-xl border border-slate-300 shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
           style={{
             width: '100%',
@@ -245,33 +276,61 @@ export const LoginGateway = ({ onLoginSuccess }) => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '12px',
-            padding: '12px 16px',
+            padding: '14px 18px',
             backgroundColor: '#FFFFFF',
             color: '#1E293B',
-            fontWeight: '600',
-            fontSize: '14px',
-            borderRadius: '12px',
+            fontWeight: '700',
+            fontSize: '15px',
+            borderRadius: '14px',
             border: '1px solid #CBD5E1',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+            cursor: loading ? 'wait' : 'pointer',
             transition: 'all 0.2s ease',
-            marginTop: '8px',
+            marginBottom: '16px',
           }}
         >
-          <svg className="w-5 h-5 shrink-0" style={{ width: '20px', height: '20px', flexShrink: 0 }} viewBox="0 0 24 24">
+          <svg className="w-5 h-5 shrink-0" style={{ width: '22px', height: '22px', flexShrink: 0 }} viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
           </svg>
-          <span>Continue with Google</span>
+          <span>
+            {loading
+              ? 'Authenticating...'
+              : authMode === 'LOGIN'
+              ? 'Continue with Google'
+              : 'Sign Up with Google'}
+          </span>
         </button>
 
+        {/* Dynamic Mode Switcher Footer Link */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMode(authMode === 'LOGIN' ? 'SIGNUP' : 'LOGIN');
+              setErrorMsg(null);
+            }}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              color: '#C97A13',
+              fontWeight: '700',
+              fontSize: '14px',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+            }}
+          >
+            {authMode === 'LOGIN'
+              ? 'New to Bhakti Studio? Create an account'
+              : 'Already have an account? Sign in here'}
+          </button>
+        </div>
 
-        {/* LOOP 59: WORKER SELF-REGISTRATION CALLOUT BOX */}
+        {/* WORKER SELF-REGISTRATION CALLOUT BOX */}
         <div
           style={{
-            marginTop: '24px',
             padding: '16px',
             backgroundColor: 'var(--bg-input)',
             borderRadius: '16px',
@@ -301,7 +360,7 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           </button>
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)', marginTop: '20px', marginBottom: 0 }}>
+        <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '20px', marginBottom: 0 }}>
           Protected by server-side Role-Based Access Control (RBAC).
         </p>
       </div>
