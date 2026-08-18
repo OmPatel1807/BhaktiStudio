@@ -56,6 +56,7 @@ router.get('/health', async (req, res) => {
 // Domain Routes
 router.use('/auth', authRateLimiter, authRoutes);
 router.use('/services', serviceRoutes);
+router.use('/catalog', serviceRoutes);
 router.use('/equipment', equipmentRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/orders', orderRoutes);

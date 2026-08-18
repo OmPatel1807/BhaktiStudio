@@ -36,6 +36,7 @@ export const OrderWizard = () => {
   });
 
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  const [serviceQuantities, setServiceQuantities] = useState({});
   const [specifications, setSpecifications] = useState({
     ledWidthFeet: 12,
     ledHeightFeet: 8,
@@ -137,7 +138,7 @@ export const OrderWizard = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          selectedServices: selectedServiceIds.map((id) => ({ serviceId: id })),
+          selectedServices: selectedServiceIds.map((id) => ({ serviceId: id, quantity: serviceQuantities[id] || 1 })),
           ledWidthFeet: specifications.ledWidthFeet,
           ledHeightFeet: specifications.ledHeightFeet,
           transportDistanceKm: specifications.transportDistanceKm,
@@ -155,14 +156,21 @@ export const OrderWizard = () => {
 
   useEffect(() => {
     fetchLiveEstimate();
-  }, [selectedServiceIds, specifications]);
+  }, [selectedServiceIds, serviceQuantities, specifications]);
 
   const toggleServiceSelection = (id) => {
     if (selectedServiceIds.includes(id)) {
       setSelectedServiceIds(selectedServiceIds.filter((item) => item !== id));
     } else {
       setSelectedServiceIds([...selectedServiceIds, id]);
+      if (!serviceQuantities[id]) {
+        setServiceQuantities((prev) => ({ ...prev, [id]: 1 }));
+      }
     }
+  };
+
+  const handleUpdateQuantity = (id, qty) => {
+    setServiceQuantities((prev) => ({ ...prev, [id]: Math.max(1, qty) }));
   };
 
   // STEP NAVIGATION GUARD
@@ -203,7 +211,7 @@ export const OrderWizard = () => {
         const h = isLed ? Number(specifications.ledHeightFeet || 8) : null;
         const area = (w && h) ? (w * h) : 1;
         const unitRate = Number(s.baseRate || s.price || 0);
-        const qty = Number(s.quantity || 1);
+        const qty = Number(serviceQuantities[s.id] || s.quantity || 1);
         const days = Number(s.days || 1);
         const computedPrice = unitRate * area * qty * days;
 
@@ -388,7 +396,9 @@ export const OrderWizard = () => {
               loadingServices={loadingServices}
               availableServices={availableServices}
               selectedServiceIds={selectedServiceIds}
+              serviceQuantities={serviceQuantities}
               onToggleServiceSelection={toggleServiceSelection}
+              onUpdateQuantity={handleUpdateQuantity}
             />
           )}
 

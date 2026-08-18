@@ -18,6 +18,8 @@ export const CatalogManager = () => {
     baseRate: 150,
     setupCharge: 2000,
   });
+  const [showEditServiceModal, setShowEditServiceModal] = useState(false);
+  const [editingService, setEditingService] = useState(null);
 
   // Equipment Tracking State
   const [equipment, setEquipment] = useState([]);
@@ -157,6 +159,51 @@ export const CatalogManager = () => {
       }
     } catch (err) {
       showToast('Failed to create service item', 'error');
+    }
+  };
+
+  const handleUpdateService = async (e) => {
+    e.preventDefault();
+    if (!editingService) return;
+    try {
+      const res = await fetch(`/api/v1/services/${editingService.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editingService),
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast(`Service '${editingService.name}' updated successfully`);
+        setShowEditServiceModal(false);
+        setEditingService(null);
+        fetchServices();
+      } else {
+        showToast(json.message, 'error');
+      }
+    } catch (err) {
+      showToast('Failed to update service item', 'error');
+    }
+  };
+
+  const handleDeleteService = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to archive/deactivate service '${name}'?`)) return;
+    try {
+      const res = await fetch(`/api/v1/services/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast(`Service '${name}' archived successfully`);
+        fetchServices();
+      } else {
+        showToast(json.message, 'error');
+      }
+    } catch (err) {
+      showToast('Failed to archive service item', 'error');
     }
   };
 
@@ -457,6 +504,46 @@ export const CatalogManager = () => {
                           {formatCurrency(svc.setupCharge)}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Action Bar */}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed #334155' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingService(svc);
+                          setShowEditServiceModal(true);
+                        }}
+                        style={{
+                          flex: 1,
+                          backgroundColor: '#334155',
+                          color: '#F8FAFC',
+                          border: 'none',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✏️ Edit Item
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteService(svc.id, svc.name)}
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                          color: '#EF4444',
+                          border: 'none',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🗑️ Archive
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -965,6 +1052,163 @@ export const CatalogManager = () => {
                   }}
                 >
                   Register Asset
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Service Modal */}
+      {showEditServiceModal && editingService && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1E293B',
+              border: '1px solid #334155',
+              borderRadius: '20px',
+              padding: '32px',
+              width: '90%',
+              maxWidth: '500px',
+            }}
+          >
+            <h3 style={{ fontSize: '20px', fontWeight: '700', marginTop: 0, color: '#F8FAFC' }}>
+              Edit Service Item: {editingService.name}
+            </h3>
+            <form onSubmit={handleUpdateService} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', color: '#94A3B8', marginBottom: '4px' }}>Service Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editingService.name}
+                  onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    color: '#F8FAFC',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', color: '#94A3B8', marginBottom: '4px' }}>Category</label>
+                <input
+                  type="text"
+                  required
+                  value={editingService.category}
+                  onChange={(e) => setEditingService({ ...editingService, category: e.target.value })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    color: '#F8FAFC',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', color: '#94A3B8', marginBottom: '4px' }}>Pricing Model</label>
+                <select
+                  value={editingService.pricingModel}
+                  onChange={(e) => setEditingService({ ...editingService, pricingModel: e.target.value })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    color: '#F8FAFC',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                  }}
+                >
+                  <option value="AREA_BASED">AREA_BASED (Per Sq Ft)</option>
+                  <option value="PER_UNIT">PER_UNIT (Per Unit Count)</option>
+                  <option value="FIXED">FIXED (Flat Package Rate)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', color: '#94A3B8', marginBottom: '4px' }}>Base Rate (₹)</label>
+                <input
+                  type="number"
+                  required
+                  value={editingService.baseRate}
+                  onChange={(e) => setEditingService({ ...editingService, baseRate: Number(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    color: '#F8FAFC',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', color: '#94A3B8', marginBottom: '4px' }}>Setup Charge (₹)</label>
+                <input
+                  type="number"
+                  required
+                  value={editingService.setupCharge}
+                  onChange={(e) => setEditingService({ ...editingService, setupCharge: Number(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    color: '#F8FAFC',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditServiceModal(false);
+                    setEditingService(null);
+                  }}
+                  style={{
+                    backgroundColor: '#334155',
+                    color: '#F8FAFC',
+                    border: 'none',
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    backgroundColor: '#F59E0B',
+                    color: '#0F172A',
+                    fontWeight: '700',
+                    border: 'none',
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save Changes
                 </button>
               </div>
             </form>
