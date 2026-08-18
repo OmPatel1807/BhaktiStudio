@@ -289,10 +289,11 @@ export const QuotationEditor = () => {
           </div>
         )}
 
-        {/* 2 Column Layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+        {/* 2 Column Responsive Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
           {/* Main Line Items & Overheads Editor */}
           <div
+            className="lg:col-span-2"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderRadius: '20px',

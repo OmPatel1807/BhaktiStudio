@@ -100,7 +100,7 @@ export const AnalyticsDashboard = () => {
         </div>
 
         {/* 4 Metric Summary Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
           {[
             {
               title: 'Total Revenue Collected',
@@ -164,9 +164,10 @@ export const AnalyticsDashboard = () => {
         </div>
 
         {/* Revenue Trend Chart & Order Breakdown Section */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '28px' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-7">
           {/* Bar Chart Visualizer */}
           <div
+            className="lg:col-span-2"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderRadius: '24px',
