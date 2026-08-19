@@ -69,40 +69,37 @@ export const AnalyticsDashboard = () => {
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header & Filter Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: '800', margin: 0 }}>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-100 light:text-[#2B2B2B]" style={{ margin: 0 }}>
               Executive Analytics & Revenue Intelligence
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '4px 0 0 0' }}>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1" style={{ margin: '4px 0 0 0' }}>
               Real-time financial performance, pipeline status, and resource utilization.
             </p>
           </div>
 
-          {/* Timeframe Selector */}
-          <div style={{ display: 'flex', gap: '8px', backgroundColor: 'var(--bg-surface)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          {/* Time Range Pills Container */}
+          <div className="flex items-center justify-between sm:justify-end bg-slate-900/90 light:bg-[#E6DFD5] p-1 rounded-xl border border-slate-800 light:border-[#D6CEC5] shrink-0 w-full sm:w-auto overflow-x-auto">
             {[
-              { id: '7d', label: '7 Days' },
-              { id: '30d', label: '30 Days' },
-              { id: '6m', label: '6 Months' },
-              { id: '1y', label: '1 Year' },
-            ].map((tf) => (
+              { label: '7D', full: '7 Days', val: '7d' },
+              { label: '30D', full: '30 Days', val: '30d' },
+              { label: '6M', full: '6 Months', val: '6m' },
+              { label: '1Y', full: '1 Year', val: '1y' },
+            ].map((t) => (
               <button
-                key={tf.id}
+                key={t.val}
                 type="button"
-                onClick={() => setTimeframe(tf.id)}
-                style={{
-                  backgroundColor: timeframe === tf.id ? '#F59E0B' : 'transparent',
-                  color: timeframe === tf.id ? '#0F172A' : 'var(--text-secondary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '6px 14px',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                }}
+                onClick={() => setTimeframe(t.val)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-1 sm:flex-initial text-center ${
+                  timeframe === t.val
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 light:text-slate-600 hover:text-slate-200'
+                }`}
+                style={{ cursor: 'pointer', border: 'none' }}
               >
-                {tf.label}
+                <span className="inline sm:hidden">{t.label}</span>
+                <span className="hidden sm:inline">{t.full}</span>
               </button>
             ))}
           </div>

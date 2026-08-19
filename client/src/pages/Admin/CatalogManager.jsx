@@ -360,42 +360,35 @@ export const CatalogManager = () => {
           </div>
         </div>
 
-        {/* Tabs Bar */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            borderBottom: '1px solid #334155',
-            marginTop: '24px',
-          }}
-        >
-          {[
-            { id: 'catalog', label: '📦 Service Catalog' },
-            { id: 'equipment', label: '🧰 Physical Equipment Tracker' },
-            { id: 'settings', label: '⚙️ Business Settings Engine' },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  borderBottom: isActive ? '3px solid #F59E0B' : '3px solid transparent',
-                  color: isActive ? '#F59E0B' : '#94A3B8',
-                  fontWeight: '700',
-                  fontSize: '15px',
-                  padding: '12px 16px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* Category / Feature Tabs Bar */}
+        <div className="w-full border-b border-slate-800 light:border-[#E6DFD5] overflow-x-auto no-scrollbar mb-6 mt-6">
+          <div className="flex gap-4 sm:gap-6 min-w-max pb-1">
+            {[
+              { id: 'catalog', label: '📦 Service Catalog' },
+              { id: 'equipment', label: '🧰 Physical Equipment Tracker' },
+              { id: 'settings', label: '⚙️ Business Settings Engine' },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-3 text-sm sm:text-base font-bold transition-all whitespace-nowrap border-b-2 ${
+                    isActive
+                      ? 'border-amber-500 text-amber-400 font-extrabold'
+                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                  style={{
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
