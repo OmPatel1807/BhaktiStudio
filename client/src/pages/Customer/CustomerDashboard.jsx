@@ -194,10 +194,10 @@ export const CustomerDashboard = () => {
           </div>
         ) : (
           <div
-            className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 items-start"
+            className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
               gap: '24px',
               alignItems: 'start',
               width: '100%',
@@ -214,27 +214,27 @@ export const CustomerDashboard = () => {
                     backgroundColor: 'var(--bg-surface)',
                     border: '1px solid var(--border-color)',
                     borderRadius: '24px',
-                    padding: '32px',
+                    padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    gap: '24px',
+                    gap: '20px',
                     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08)',
                     transition: 'transform 0.2s ease, border-color 0.2s ease',
                   }}
                 >
                   {/* Card Header Row: Order Number & Status Pill */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: '800', color: '#C97A13', fontSize: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '800', color: '#C97A13', fontSize: '18px' }}>
                       {ord.orderNumber}
                     </span>
                     <span
                       style={{
                         backgroundColor: 'rgba(201, 122, 19, 0.15)',
                         color: '#C97A13',
-                        padding: '8px 16px',
+                        padding: '6px 14px',
                         borderRadius: '20px',
-                        fontSize: '14px',
+                        fontSize: '12px',
                         fontWeight: '800',
                         letterSpacing: '0.5px',
                       }}
@@ -245,34 +245,37 @@ export const CustomerDashboard = () => {
 
                   {/* Card Main Body: Event Title & Location Details */}
                   <div>
-                    <h3 style={{ fontSize: '26px', fontWeight: '800', margin: '0 0 12px 0', color: 'var(--text-primary)' }}>
+                    <h3 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 10px 0', color: 'var(--text-primary)' }}>
                       {ord.eventType}
                     </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '16px', fontWeight: '500', color: 'var(--text-primary)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>
                       <div>📍 <strong style={{ color: 'var(--text-secondary)' }}>Venue:</strong> {ord.venueAddress}</div>
                       <div>🗓️ <strong style={{ color: 'var(--text-secondary)' }}>Event Date:</strong> {formatDateTime(ord.eventDate)}</div>
                     </div>
                   </div>
 
-                  {/* LOOP 75: Card Footer Row (Responsive Stacking on Mobile) */}
+                  {/* Card Footer Row */}
                   <div
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '16px',
+                      gap: '14px',
                       borderTop: '1px solid var(--border-color)',
-                      paddingTop: '20px',
-                      marginTop: '8px',
+                      paddingTop: '16px',
+                      marginTop: '4px',
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {totalLabel}
                       </div>
-                      <div style={{ fontSize: '28px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
+                      <div style={{ fontSize: '24px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
                         {formatCurrency(displayTotal)}
                       </div>
-                    <div className="flex flex-col sm:flex-row gap-3 items-center w-full">
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2.5 items-center w-full">
                       {ord.paymentStatus !== 'PAID' && (
                         <button
                           type="button"
@@ -285,10 +288,10 @@ export const CustomerDashboard = () => {
                             flex: 1,
                             backgroundColor: '#F59E0B',
                             color: '#0F172A',
-                            padding: '12px 18px',
-                            borderRadius: '14px',
-                            fontWeight: '900',
-                            fontSize: '15px',
+                            padding: '10px 14px',
+                            borderRadius: '12px',
+                            fontWeight: '800',
+                            fontSize: '13px',
                             border: 'none',
                             cursor: 'pointer',
                             boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
@@ -308,10 +311,10 @@ export const CustomerDashboard = () => {
                           backgroundColor: 'var(--bg-input)',
                           color: 'var(--text-primary)',
                           border: '1px solid var(--border-color)',
-                          padding: '12px 18px',
-                          borderRadius: '14px',
-                          fontWeight: '800',
-                          fontSize: '15px',
+                          padding: '10px 14px',
+                          borderRadius: '12px',
+                          fontWeight: '700',
+                          fontSize: '13px',
                           cursor: 'pointer',
                           whiteSpace: 'nowrap',
                           textAlign: 'center',
@@ -321,7 +324,6 @@ export const CustomerDashboard = () => {
                       </button>
                     </div>
                   </div>
-                </div>
                 </div>
               );
             })}
