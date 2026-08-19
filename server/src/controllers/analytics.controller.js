@@ -19,89 +19,41 @@ export const getOverviewMetrics = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysToSubtract);
 
-    const rules = PricingEngineService.getSettings().pricingRules;
-
-    // 1. Total Revenue from Paid Payment Records in timeframe
-    const paymentsSum = await prisma.paymentRecord.aggregate({
+    // Fetch all orders created in this window
+    const orders = await prisma.order.findMany({
       where: {
-        status: 'PAID',
-        paymentDate: { gte: startDate },
-      },
-      _sum: { amount: true },
-    });
-    const totalRevenue = paymentsSum._sum.amount || 0;
-
-    // 2. Active Orders & Pipeline Counts in timeframe
-    const totalOrdersCount = await prisma.order.count({
-      where: { createdAt: { gte: startDate } },
-    });
-    const activeEventsCount = await prisma.order.count({
-      where: {
-        createdAt: { gte: startDate },
-        status: { in: ['CONFIRMED', 'WORKERS_ASSIGNED', 'SETUP_IN_PROGRESS', 'EVENT_IN_PROGRESS'] },
-      },
-    });
-
-    // 3. Retrieve Non-Cancelled Active Orders created in timeframe
-    const activeOrders = await prisma.order.findMany({
-      where: {
-        status: { not: 'CANCELLED' },
-        createdAt: { gte: startDate },
+        createdAt: { gte: startDate }
       },
       include: {
-        orderItems: true,
-        quotations: {
-          orderBy: { versionNumber: 'desc' },
-        },
-      },
+        quotations: { orderBy: { versionNumber: 'desc' } },
+        payments: true,
+        orderItems: true
+      }
     });
 
-    // 4. Calculate Quoted Receivables Total
-    let totalQuotedAmount = 0;
+    let totalRevenue = 0;
+    let totalQuoted = 0;
+    let activeExecutions = 0;
 
-    for (const order of activeOrders) {
-      const equipmentSubtotal = (order.orderItems || []).reduce((sum, item) => {
-        const rate = Number(item.finalRate || item.estimatedRate || 0);
-        const qty = Number(item.quantity || 1);
-        return sum + rate * qty;
-      }, 0);
+    orders.forEach((order) => {
+      if (order.status === 'CANCELLED') return;
 
-      const latestQuotation = order.quotations?.find((q) => q.isAdminApproved) || order.quotations?.[0];
+      const latestQuotation = order.quotations?.[0];
+      const orderTotal = Number(latestQuotation?.totalAmount || order.totalAmount || 0);
 
-      if (latestQuotation) {
-        const setupFee = Number(latestQuotation.setupFee || 0);
-        const transportFee = Number(latestQuotation.transportFee || 0);
-        const technicianFee = Number(latestQuotation.technicianFee || 0);
-        const discounts = Number(latestQuotation.discounts || 0);
-        const overheadsTotal = setupFee + transportFee + technicianFee;
+      const orderPaid = (order.payments || [])
+        .filter(p => p.status === 'SUCCESS' || p.status === 'PAID')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-        const currentSubtotal = Number(latestQuotation.subtotal || 0);
-        const isStale = currentSubtotal < equipmentSubtotal || (equipmentSubtotal > 0 && Math.abs(currentSubtotal - overheadsTotal) < 1);
+      totalQuoted += orderTotal;
+      totalRevenue += orderPaid;
 
-        if (isStale) {
-          const calculatedSubtotal = equipmentSubtotal + overheadsTotal - discounts;
-          const taxableBase = Math.max(0, calculatedSubtotal);
-          const taxAmount = (taxableBase * rules.taxPercentage) / 100;
-          totalQuotedAmount += (taxableBase + taxAmount);
-        } else {
-          totalQuotedAmount += Number(latestQuotation.totalAmount || 0);
-        }
-      } else if (equipmentSubtotal > 0) {
-        const areaSqFt = Number(order.ledWidthFeet || 0) * Number(order.ledHeightFeet || 0);
-        const setupFee = areaSqFt > 0 ? rules.defaultSetupFee : 500.0;
-        const transportFee = order.distanceKm ? Number(order.distanceKm) * rules.defaultTransportRate : 0;
-        const estimatedSubtotal = equipmentSubtotal + setupFee + transportFee;
-        const estimatedTax = (estimatedSubtotal * rules.taxPercentage) / 100;
-        totalQuotedAmount += (estimatedSubtotal + estimatedTax);
+      if (['CONFIRMED', 'WORKERS_ASSIGNED', 'SETUP_IN_PROGRESS', 'EVENT_IN_PROGRESS'].includes(order.status)) {
+        activeExecutions += 1;
       }
-    }
+    });
 
-    // 5. Net Unpaid Pending Receivables = Quoted Total - Revenue Collected
-    const pendingReceivables = Math.max(0, totalQuotedAmount - totalRevenue);
-
-    // 6. Growth Metric Baselines
-    const revenueGrowthPct = 14.5;
-    const ordersGrowthPct = 8.2;
+    const pendingReceivables = Math.max(0, totalQuoted - totalRevenue);
 
     return res.json({
       success: true,
@@ -109,12 +61,12 @@ export const getOverviewMetrics = async (req, res) => {
         totalRevenueCollected: totalRevenue,
         totalRevenue,
         pendingReceivables,
-        totalOrdersCount,
-        activeExecutionsCount: activeEventsCount,
-        activeEventsCount,
-        monthlyGrowthPercentage: revenueGrowthPct,
-        revenueGrowthPct,
-        ordersGrowthPct,
+        totalOrdersCount: orders.length,
+        activeExecutionsCount: activeExecutions,
+        activeEventsCount: activeExecutions,
+        monthlyGrowthPercentage: 14.5,
+        revenueGrowthPct: 14.5,
+        ordersGrowthPct: 8.2,
       },
     });
   } catch (error) {
@@ -128,7 +80,7 @@ export const getOverviewMetrics = async (req, res) => {
  */
 export const getRevenueTrends = async (req, res) => {
   try {
-    const { timeframe = '30d' } = req.query;
+    const timeframe = req.query.timeframe || req.query.range || '30d';
 
     let daysToSubtract = 30;
     if (timeframe === '7d') daysToSubtract = 7;
@@ -139,76 +91,87 @@ export const getRevenueTrends = async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysToSubtract);
 
-    // Fetch payments & orders
-    const [payments, orders] = await Promise.all([
-      prisma.paymentRecord.findMany({
-        where: {
-          status: 'PAID',
-          paymentDate: { gte: startDate },
-        },
-      }),
-      prisma.order.findMany({
-        where: {
-          status: { not: 'CANCELLED' },
-          createdAt: { gte: startDate },
-        },
-        include: {
-          quotations: { orderBy: { versionNumber: 'desc' } },
-        },
-      }),
-    ]);
+    // Fetch all orders created in this window
+    const orders = await prisma.order.findMany({
+      where: {
+        createdAt: { gte: startDate }
+      },
+      include: {
+        quotations: { orderBy: { versionNumber: 'desc' } },
+        payments: true,
+        orderItems: true
+      }
+    });
 
-    // Generate buckets
-    const bucketCount = timeframe === '7d' ? 7 : timeframe === '30d' ? 10 : 12;
-    const intervalMs = (endDate.getTime() - startDate.getTime()) / bucketCount;
+    const timelineMap = {};
+    const current = new Date(startDate);
+    const end = new Date(endDate);
 
-    const series = [];
+    if (timeframe === '6m' || timeframe === '1y') {
+      // Monthly buckets
+      while (current <= end) {
+        const key = current.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        timelineMap[key] = { date: key, quoted: 0, collected: 0 };
+        current.setMonth(current.getMonth() + 1);
+      }
 
-    for (let i = 0; i < bucketCount; i++) {
-      const bStart = new Date(startDate.getTime() + i * intervalMs);
-      const bEnd = new Date(startDate.getTime() + (i + 1) * intervalMs);
+      orders.forEach(order => {
+        if (order.status === 'CANCELLED') return;
+        const key = new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        const orderTotal = Number(order.quotations?.[0]?.totalAmount || order.totalAmount || 0);
+        const orderPaid = (order.payments || [])
+          .filter(p => p.status === 'SUCCESS' || p.status === 'PAID')
+          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-      const label = bStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+        if (timelineMap[key]) {
+          timelineMap[key].quoted += Math.round(orderTotal);
+          timelineMap[key].collected += Math.round(orderPaid);
+        }
+      });
+    } else {
+      // Daily buckets
+      while (current <= end) {
+        const key = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        timelineMap[key] = { date: key, quoted: 0, collected: 0 };
+        current.setDate(current.getDate() + 1);
+      }
 
-      // Aggregate payments collected in this bucket
-      const collected = payments
-        .filter((p) => {
-          const pDate = new Date(p.paymentDate);
-          return pDate >= bStart && pDate < bEnd;
-        })
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
+      orders.forEach(order => {
+        if (order.status === 'CANCELLED') return;
+        const key = new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const orderTotal = Number(order.quotations?.[0]?.totalAmount || order.totalAmount || 0);
+        const orderPaid = (order.payments || [])
+          .filter(p => p.status === 'SUCCESS' || p.status === 'PAID')
+          .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-      // Aggregate quoted total in this bucket
-      const quoted = orders
-        .filter((o) => {
-          const oDate = new Date(o.createdAt);
-          return oDate >= bStart && oDate < bEnd;
-        })
-        .reduce((sum, o) => {
-          const q = o.quotations?.[0];
-          return sum + (q ? Number(q.totalAmount || 0) : 46492);
-        }, 0);
-
-      series.push({
-        date: label,
-        quoted: Math.round(quoted),
-        collected: Math.round(collected),
+        if (timelineMap[key]) {
+          timelineMap[key].quoted += Math.round(orderTotal);
+          timelineMap[key].collected += Math.round(orderPaid);
+        }
       });
     }
 
-    // Ensure fallback non-zero data if DB has sparse historical timeline
+    const series = Object.values(timelineMap);
+
+    // Fallback if series is sparse/empty
     const totalCollected = series.reduce((sum, s) => sum + s.collected, 0);
     const totalQuoted = series.reduce((sum, s) => sum + s.quoted, 0);
 
     if (totalCollected === 0 && totalQuoted === 0) {
-      // Fetch latest orders & payments regardless of date to populate trend curve
-      const allPayments = await prisma.paymentRecord.findMany({ where: { status: 'PAID' } });
       const allOrders = await prisma.order.findMany({
         where: { status: { not: 'CANCELLED' } },
-        include: { quotations: { orderBy: { versionNumber: 'desc' } } },
+        include: {
+          quotations: { orderBy: { versionNumber: 'desc' } },
+          payments: true
+        },
       });
 
-      const actualCollected = allPayments.reduce((sum, p) => sum + (p.amount || 0), 0) || 13947.6;
+      const actualCollected = allOrders.reduce((sum, o) => {
+        return sum + (o.payments || [])
+          .filter(p => p.status === 'SUCCESS' || p.status === 'PAID')
+          .reduce((s, p) => s + Number(p.amount || 0), 0);
+      }, 0) || 13947.6;
+
       const actualQuoted = allOrders.reduce((sum, o) => sum + Number(o.quotations?.[0]?.totalAmount || 46492), 0) || 46492;
 
       const n = series.length;
