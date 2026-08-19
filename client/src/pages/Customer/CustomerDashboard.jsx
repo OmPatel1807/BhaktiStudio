@@ -193,8 +193,9 @@ export const CustomerDashboard = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6 w-full mt-6">
-            {orders.map((ord) => {
+          <div className="w-full max-w-7xl mx-auto mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+              {orders.map((ord) => {
               // LOOP 40: Unified display total resolution
               const { displayTotal, label: totalLabel } = resolveOrderDisplayTotal(ord);
 
@@ -317,6 +318,7 @@ export const CustomerDashboard = () => {
               );
             })}
           </div>
+        </div>
         )}
       </div>
 

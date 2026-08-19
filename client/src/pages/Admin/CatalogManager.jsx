@@ -586,13 +586,10 @@ export const CatalogManager = () => {
               </div>
             ) : (
               <div
-                className="w-full overflow-x-auto rounded-2xl border border-slate-800 light:border-[#E6DFD5]"
-                style={{
-                  backgroundColor: '#1E293B',
-                  WebkitOverflowScrolling: 'touch',
-                }}
+                className="w-full bg-[#111A2E] light:bg-[#FAF9F6] border border-slate-800 light:border-[#E6DFD5] rounded-2xl overflow-hidden mt-6"
               >
-                <table style={{ width: '100%', minWidth: '580px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <div className="w-full overflow-x-auto overflow-y-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  <table style={{ width: '100%', minWidth: '620px', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #334155', backgroundColor: '#0F172A' }}>
                       <th style={{ padding: '16px', color: '#94A3B8', fontSize: '13px' }}>Asset Tag</th>
@@ -665,6 +662,7 @@ export const CatalogManager = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
             )}
           </div>
         )}
