@@ -7,6 +7,9 @@ import { errorHandler } from './middleware/errorHandler.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Essential for Render/Vercel reverse proxies to extract real client IP addresses
+app.set('trust proxy', 1);
+
 // Production CORS configuration allowing Vercel deployment frontend & local dev
 const allowedOrigins = [
   'http://localhost:3000',

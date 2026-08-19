@@ -20,7 +20,8 @@ export const createRateLimiter = ({ windowMs = 15 * 60 * 1000, max = 100, messag
       return next();
     }
 
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const rawIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+    const ip = typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : '127.0.0.1';
     const key = `${req.baseUrl}_${ip}`;
     const now = Date.now();
 
@@ -49,14 +50,14 @@ export const createRateLimiter = ({ windowMs = 15 * 60 * 1000, max = 100, messag
 
 export const globalRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 10000 : 200,
-  message: 'Global rate limit exceeded. Please slow down requests.',
+  max: isDev ? 1000 : 300,
+  message: 'Too many requests from this IP. Please try again after 15 minutes.',
 });
 
 export const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 10000 : 20,
-  message: 'Too many authentication attempts. Account temporarily throttled for security.',
+  max: isDev ? 200 : 50,
+  message: 'Too many authentication attempts. Please wait a few minutes before trying again.',
 });
 
 /**
