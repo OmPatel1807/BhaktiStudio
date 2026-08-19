@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 
 export const AnalyticsDashboard = () => {
   const { token } = useAuth();
@@ -165,7 +174,7 @@ export const AnalyticsDashboard = () => {
 
         {/* Revenue Trend Chart & Order Breakdown Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-7">
-          {/* Bar Chart Visualizer */}
+          {/* Recharts Area Chart Visualizer */}
           <div
             className="lg:col-span-2"
             style={{
@@ -175,28 +184,92 @@ export const AnalyticsDashboard = () => {
               padding: '24px',
             }}
           >
-            <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 20px 0' }}>
-              Revenue Collected vs. Quoted Trends
-            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>
+                    Revenue Collected vs. Quoted Trends
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                    Comparison of pipeline quoted value vs realized cashflow.
+                  </p>
+                </div>
 
-            <div style={{ height: '220px', display: 'flex', alignItems: 'flex-end', gap: '16px', paddingBottom: '20px', borderBottom: '1px solid var(--border-color)' }}>
-              {revenueTrends.map((point, i) => {
-                const heightPct = Math.round((point.revenue / maxRevenue) * 100) || 10;
-                return (
-                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                    <div
-                      style={{
-                        width: '100%',
-                        height: `${heightPct}%`,
-                        backgroundColor: '#F59E0B',
-                        borderRadius: '6px 6px 0 0',
-                        transition: 'height 0.4s ease',
-                      }}
-                    />
-                    <span style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '8px' }}>{point.date}</span>
+                {/* Chart Legend Indicators */}
+                <div style={{ display: 'flex', gap: '16px', fontSize: '12px', fontWeight: '700' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#F59E0B', display: 'inline-block' }}></span>
+                    <span style={{ color: 'var(--text-primary)' }}>Quoted Value</span>
                   </div>
-                );
-              })}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }}></span>
+                    <span style={{ color: 'var(--text-primary)' }}>Collected Revenue</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Explicit Height Wrapper */}
+            <div className="w-full h-72 sm:h-80 min-h-[280px]">
+              {revenueTrends && revenueTrends.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueTrends} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorQuoted" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorCollected" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="var(--border-color)" strokeDasharray="3 3" opacity={0.5} />
+                    <XAxis dataKey="date" fontSize={12} stroke="var(--text-secondary)" />
+                    <YAxis
+                      fontSize={12}
+                      stroke="var(--text-secondary)"
+                      tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'var(--bg-input)',
+                        borderColor: 'var(--border-color)',
+                        borderRadius: '0.75rem',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.75rem',
+                        boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+                      }}
+                      formatter={(value, name) => [
+                        `₹${Number(value).toLocaleString('en-IN')}`,
+                        name === 'quoted' ? 'Quoted Value' : 'Collected Revenue',
+                      ]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="quoted"
+                      name="quoted"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorQuoted)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="collected"
+                      name="collected"
+                      stroke="#10B981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorCollected)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                  <span>📈 No revenue activity recorded in this time range</span>
+                </div>
+              )}
             </div>
           </div>
 
