@@ -95,7 +95,7 @@ export const CustomerDashboard = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ fontSize: '32px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-              Welcome back, {user?.name || 'Customer'} 👋
+              Welcome back, {user?.name || user?.fullName || (user?.email ? user.email.split('@')[0] : 'Customer')} 👋
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '15px', margin: '6px 0 0 0' }}>
               Track your studio bookings, quotations, and event execution status.
@@ -193,7 +193,16 @@ export const CustomerDashboard = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6 items-start w-full">
+          <div
+            className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 items-start"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 420px), 1fr))',
+              gap: '24px',
+              alignItems: 'start',
+              width: '100%',
+            }}
+          >
             {orders.map((ord) => {
               // LOOP 40: Unified display total resolution
               const { displayTotal, label: totalLabel } = resolveOrderDisplayTotal(ord);
