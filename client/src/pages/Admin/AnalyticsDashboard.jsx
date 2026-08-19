@@ -26,10 +26,10 @@ export const AnalyticsDashboard = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [overviewRes, trendsRes, pipelineRes, workloadRes] = await Promise.all([
-        fetch('/api/v1/analytics/overview', { headers }),
+        fetch(`/api/v1/analytics/overview?timeframe=${timeframe}`, { headers }),
         fetch(`/api/v1/analytics/revenue-chart?timeframe=${timeframe}`, { headers }),
-        fetch('/api/v1/analytics/orders-breakdown', { headers }),
-        fetch('/api/v1/analytics/workload', { headers }),
+        fetch(`/api/v1/analytics/orders-breakdown?timeframe=${timeframe}`, { headers }),
+        fetch(`/api/v1/analytics/workload?timeframe=${timeframe}`, { headers }),
       ]);
 
       const [overviewJson, trendsJson, pipelineJson, workloadJson] = await Promise.all([
@@ -144,68 +144,83 @@ export const AnalyticsDashboard = () => {
           </div>
         </div>
 
-        {/* 4 Metric Summary Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
-          {[
-            {
-              title: 'Total Revenue Collected',
-              value: formatCurrency(overview?.totalRevenueCollected || 0),
-              sub: `Growth: +${overview?.monthlyGrowthPercentage || 0}% vs last month`,
-              icon: '💰',
-            },
-            {
-              title: 'Pending Receivables',
-              value: formatCurrency(overview?.pendingReceivables || 0),
-              sub: 'Unpaid balance across quotations',
-              icon: '⏳',
-            },
-            {
-              title: 'Total Orders Count',
-              value: overview?.totalOrdersCount || 0,
-              sub: 'All-time client bookings',
-              icon: '📜',
-            },
-            {
-              title: 'Active Field Executions',
-              value: overview?.activeExecutionsCount || 0,
-              sub: 'Events in progress currently',
-              icon: '⚡',
-            },
-          ].map((card, idx) => (
-            <div
-              key={idx}
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderRadius: '20px',
-                border: '1px solid var(--border-color)',
-                padding: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-              }}
-            >
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '14px',
-                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                  color: '#F59E0B',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '22px',
-                }}
-              >
-                {card.icon}
-              </div>
-              <div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{card.title}</div>
-                <div style={{ fontSize: '22px', fontWeight: '800', margin: '2px 0' }}>{card.value}</div>
-                <div style={{ fontSize: '11px', color: '#F59E0B', fontWeight: '600' }}>{card.sub}</div>
-              </div>
+        {/* KPI Metrics Grid: 1 col on mobile, 2 cols on tablet, 4 cols on desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mb-6">
+          {/* Card 1: Total Revenue Collected */}
+          <div style={{
+            backgroundColor: '#111A2E',
+            border: '1px solid #1E293B',
+            borderRadius: '20px',
+            padding: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>💰</div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Revenue Collected</div>
+              <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{formatCurrency(overview?.totalRevenueCollected || 0)}</div>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#10B981', marginTop: '2px' }}>↑ Realized Cashflow</div>
             </div>
-          ))}
+          </div>
+
+          {/* Card 2: Pending Receivables */}
+          <div style={{
+            backgroundColor: '#111A2E',
+            border: '1px solid #1E293B',
+            borderRadius: '20px',
+            padding: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>⏳</div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pending Receivables</div>
+              <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{formatCurrency(overview?.pendingReceivables || 0)}</div>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#F59E0B', marginTop: '2px' }}>Unpaid pipeline balance</div>
+            </div>
+          </div>
+
+          {/* Card 3: Total Orders */}
+          <div style={{
+            backgroundColor: '#111A2E',
+            border: '1px solid #1E293B',
+            borderRadius: '20px',
+            padding: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>📜</div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders Count</div>
+              <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{overview?.totalOrdersCount || 0}</div>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#F59E0B', marginTop: '2px' }}>Client bookings</div>
+            </div>
+          </div>
+
+          {/* Card 4: Active Field Executions */}
+          <div style={{
+            backgroundColor: '#111A2E',
+            border: '1px solid #1E293B',
+            borderRadius: '20px',
+            padding: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>⚡</div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Executions</div>
+              <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{overview?.activeExecutionsCount || 0}</div>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#F59E0B', marginTop: '2px' }}>Events in progress</div>
+            </div>
+          </div>
         </div>
 
         {/* Revenue Trend Chart & Order Breakdown Section */}

@@ -9,26 +9,45 @@ const prisma = new PrismaClient();
  */
 export const getOverviewMetrics = async (req, res) => {
   try {
+    const timeframe = req.query.timeframe || req.query.range || '30d';
+
+    let daysToSubtract = 30;
+    if (timeframe === '7d') daysToSubtract = 7;
+    if (timeframe === '6m') daysToSubtract = 180;
+    if (timeframe === '1y') daysToSubtract = 365;
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysToSubtract);
+
     const rules = PricingEngineService.getSettings().pricingRules;
 
-    // 1. Total Revenue from Paid Payment Records
+    // 1. Total Revenue from Paid Payment Records in timeframe
     const paymentsSum = await prisma.paymentRecord.aggregate({
-      where: { status: 'PAID' },
+      where: {
+        status: 'PAID',
+        paymentDate: { gte: startDate },
+      },
       _sum: { amount: true },
     });
     const totalRevenue = paymentsSum._sum.amount || 0;
 
-    // 2. Active Orders & Pipeline Counts
-    const totalOrdersCount = await prisma.order.count();
+    // 2. Active Orders & Pipeline Counts in timeframe
+    const totalOrdersCount = await prisma.order.count({
+      where: { createdAt: { gte: startDate } },
+    });
     const activeEventsCount = await prisma.order.count({
       where: {
+        createdAt: { gte: startDate },
         status: { in: ['CONFIRMED', 'WORKERS_ASSIGNED', 'SETUP_IN_PROGRESS', 'EVENT_IN_PROGRESS'] },
       },
     });
 
-    // 3. Retrieve Non-Cancelled Active Orders with OrderItems & Quotations
+    // 3. Retrieve Non-Cancelled Active Orders created in timeframe
     const activeOrders = await prisma.order.findMany({
-      where: { status: { not: 'CANCELLED' } },
+      where: {
+        status: { not: 'CANCELLED' },
+        createdAt: { gte: startDate },
+      },
       include: {
         orderItems: true,
         quotations: {
@@ -37,7 +56,7 @@ export const getOverviewMetrics = async (req, res) => {
       },
     });
 
-    // 4. Calculate Quoted Receivables Total with Equipment Rehydration Check
+    // 4. Calculate Quoted Receivables Total
     let totalQuotedAmount = 0;
 
     for (const order of activeOrders) {
@@ -212,8 +231,19 @@ export const getRevenueTrends = async (req, res) => {
  */
 export const getOrdersBreakdown = async (req, res) => {
   try {
+    const timeframe = req.query.timeframe || req.query.range || '30d';
+
+    let daysToSubtract = 30;
+    if (timeframe === '7d') daysToSubtract = 7;
+    if (timeframe === '6m') daysToSubtract = 180;
+    if (timeframe === '1y') daysToSubtract = 365;
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysToSubtract);
+
     const counts = await prisma.order.groupBy({
       by: ['status'],
+      where: { createdAt: { gte: startDate } },
       _count: { status: true },
     });
 
