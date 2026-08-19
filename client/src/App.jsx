@@ -57,9 +57,9 @@ function NavigationBar() {
         transition: 'background-color 0.3s ease, border-color 0.3s ease',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <Link to="/" onClick={closeMobileMenu} style={{ textDecoration: 'none', color: 'var(--text-primary)', display: 'flex', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div className="flex items-center gap-2 sm:gap-6 shrink-0">
+          <Link to="/" onClick={closeMobileMenu} style={{ textDecoration: 'none', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <Logo size="medium" />
           </Link>
 

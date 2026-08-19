@@ -586,14 +586,13 @@ export const CatalogManager = () => {
               </div>
             ) : (
               <div
+                className="w-full overflow-x-auto rounded-2xl border border-slate-800 light:border-[#E6DFD5]"
                 style={{
                   backgroundColor: '#1E293B',
-                  border: '1px solid #334155',
-                  borderRadius: '16px',
-                  overflow: 'hidden',
+                  WebkitOverflowScrolling: 'touch',
                 }}
               >
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <table style={{ width: '100%', minWidth: '580px', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #334155', backgroundColor: '#0F172A' }}>
                       <th style={{ padding: '16px', color: '#94A3B8', fontSize: '13px' }}>Asset Tag</th>
@@ -616,10 +615,13 @@ export const CatalogManager = () => {
                         <td style={{ padding: '16px' }}>
                           <span
                             style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
                               padding: '4px 10px',
                               borderRadius: '6px',
                               fontSize: '12px',
                               fontWeight: '700',
+                              whiteSpace: 'nowrap',
                               backgroundColor:
                                 item.status === 'AVAILABLE'
                                   ? 'rgba(16,185,129,0.15)'

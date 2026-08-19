@@ -9,10 +9,10 @@ export const Logo = ({ size = 'medium', layout = 'horizontal', showText = true }
   // neighboring header controls on narrow viewports, without ever dropping
   // the wordmark below a comfortably legible size.
   const dimensions = {
-    small: { iconW: 'clamp(32px, 9vw, 42px)', iconH: 'clamp(24px, 6.75vw, 31.5px)', text: 'clamp(15px, 4vw, 20px)' },
-    medium: { iconW: 'clamp(40px, 11vw, 56px)', iconH: 'clamp(30px, 8.25vw, 42px)', text: 'clamp(17px, 4.5vw, 26px)' },
-    large: { iconW: 'clamp(60px, 16vw, 96px)', iconH: 'clamp(45px, 12vw, 72px)', text: 'clamp(20px, 6vw, 34px)' },
-  }[size] || { iconW: 'clamp(40px, 11vw, 56px)', iconH: 'clamp(30px, 8.25vw, 42px)', text: 'clamp(17px, 4.5vw, 26px)' };
+    small: { iconW: 'clamp(28px, 7vw, 36px)', iconH: 'clamp(21px, 5.25vw, 27px)', text: 'clamp(13px, 3.5vw, 18px)' },
+    medium: { iconW: 'clamp(34px, 8.5vw, 48px)', iconH: 'clamp(25.5px, 6.4vw, 36px)', text: 'clamp(14px, 3.8vw, 22px)' },
+    large: { iconW: 'clamp(50px, 14vw, 84px)', iconH: 'clamp(37.5px, 10.5vw, 63px)', text: 'clamp(18px, 5vw, 30px)' },
+  }[size] || { iconW: 'clamp(34px, 8.5vw, 48px)', iconH: 'clamp(25.5px, 6.4vw, 36px)', text: 'clamp(14px, 3.8vw, 22px)' };
 
   const gradientId = `logoGrad_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -22,9 +22,10 @@ export const Logo = ({ size = 'medium', layout = 'horizontal', showText = true }
         display: 'flex',
         flexDirection: layout === 'vertical' ? 'column' : 'row',
         alignItems: 'center',
-        gap: layout === 'vertical' ? '14px' : 'clamp(8px, 3vw, 16px)',
+        gap: layout === 'vertical' ? '14px' : 'clamp(6px, 2vw, 12px)',
         userSelect: 'none',
         cursor: 'pointer',
+        flexShrink: 0,
       }}
     >
       {/* Exact Custom Line-Art Emblem SVG: Meditation Figure + 4 Intricate Veined Leaves + Sparkles + Flourish Base */}
@@ -135,7 +136,7 @@ export const Logo = ({ size = 'medium', layout = 'horizontal', showText = true }
           style={{
             fontSize: dimensions.text,
             fontWeight: '900',
-            letterSpacing: '3px',
+            letterSpacing: 'clamp(1px, 0.4vw, 2.5px)',
             color: 'var(--text-primary)',
             fontFamily: 'Inter, system-ui, sans-serif',
             textTransform: 'uppercase',
