@@ -69,39 +69,78 @@ export const AnalyticsDashboard = () => {
     >
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* Header & Filter Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 w-full">
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          marginBottom: '24px',
+          width: '100%'
+        }}>
+          {/* Header Title & Subtitle */}
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-100 light:text-[#2B2B2B]" style={{ margin: 0 }}>
+            <h1 style={{
+              fontSize: 'clamp(20px, 4vw, 28px)',
+              fontWeight: '900',
+              color: '#FFFFFF',
+              margin: '0 0 6px 0',
+              letterSpacing: '-0.5px'
+            }}>
               Executive Analytics & Revenue Intelligence
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1" style={{ margin: '4px 0 0 0' }}>
+            <p style={{
+              fontSize: '13px',
+              color: '#94A3B8',
+              margin: 0,
+              fontWeight: '400'
+            }}>
               Real-time financial performance, pipeline status, and resource utilization.
             </p>
           </div>
 
-          {/* Time Range Pills Container */}
-          <div className="flex items-center justify-between sm:justify-end bg-slate-900/90 light:bg-[#E6DFD5] p-1 rounded-xl border border-slate-800 light:border-[#D6CEC5] shrink-0 w-full sm:w-auto overflow-x-auto">
+          {/* Luxury Segmented Time Filter */}
+          <div style={{
+            display: 'inline-flex',
+            backgroundColor: '#0B1120',
+            border: '1px solid #1E293B',
+            borderRadius: '16px',
+            padding: '4px',
+            gap: '4px',
+            width: '100%',
+            maxWidth: '400px',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.4)'
+          }}>
             {[
-              { label: '7D', full: '7 Days', val: '7d' },
-              { label: '30D', full: '30 Days', val: '30d' },
-              { label: '6M', full: '6 Months', val: '6m' },
-              { label: '1Y', full: '1 Year', val: '1y' },
-            ].map((t) => (
-              <button
-                key={t.val}
-                type="button"
-                onClick={() => setTimeframe(t.val)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex-1 sm:flex-initial text-center ${
-                  timeframe === t.val
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
-                    : 'text-slate-400 light:text-slate-600 hover:text-slate-200'
-                }`}
-                style={{ cursor: 'pointer', border: 'none' }}
-              >
-                <span className="inline sm:hidden">{t.label}</span>
-                <span className="hidden sm:inline">{t.full}</span>
-              </button>
-            ))}
+              { label: '7 Days', val: '7d' },
+              { label: '30 Days', val: '30d' },
+              { label: '6 Months', val: '6m' },
+              { label: '1 Year', val: '1y' }
+            ].map((t) => {
+              const isActive = (timeframe || '30d') === t.val;
+              return (
+                <button
+                  key={t.val}
+                  type="button"
+                  onClick={() => setTimeframe(t.val)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: isActive ? '800' : '600',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    backgroundColor: isActive ? '#F59E0B' : 'transparent',
+                    color: isActive ? '#090D16' : '#94A3B8',
+                    boxShadow: isActive ? '0 4px 12px rgba(245, 158, 11, 0.35)' : 'none',
+                    transition: 'all 0.2s ease-in-out',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
