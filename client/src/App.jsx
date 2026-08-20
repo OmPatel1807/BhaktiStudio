@@ -21,6 +21,33 @@ import { NotificationBell } from './components/Notifications/NotificationBell';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { Logo } from './components/Common/Logo';
 
+/* Clean Standard 3-Line Hamburger & Close SVG */
+const StandardHamburgerIcon = ({ size = 20, color = 'currentColor' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <line x1="3" y1="6" x2="21" y2="6" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <line x1="3" y1="18" x2="21" y2="18" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const StandardCloseIcon = ({ size = 20, color = '#F59E0B' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M18 6L6 18M6 6L18 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 function NavigationBar() {
   const { user, isAuthenticated, logout } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
@@ -341,8 +368,6 @@ function NavigationBar() {
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
               padding: '8px 12px',
-              fontSize: '18px',
-              fontWeight: '800',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -350,7 +375,11 @@ function NavigationBar() {
               flexShrink: 0,
             }}
           >
-            {mobileMenuOpen ? '✕' : '🍔'}
+            {mobileMenuOpen ? (
+              <StandardCloseIcon size={20} color="#F59E0B" />
+            ) : (
+              <StandardHamburgerIcon size={20} color="var(--text-primary)" />
+            )}
           </button>
         </div>
       </div>
