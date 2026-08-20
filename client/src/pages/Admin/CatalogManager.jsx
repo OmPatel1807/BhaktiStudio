@@ -255,6 +255,44 @@ export const CatalogManager = () => {
     }
   };
 
+  const handleEditEquipment = (item) => {
+    showToast(`Edit asset '${item.assetTag}' clicked (MOCK)`);
+  };
+
+  const handleDeleteEquipment = async (id) => {
+    if (window.confirm("Are you sure you want to delete this equipment unit?")) {
+      try {
+        const res = await fetch(`/api/v1/equipment/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          showToast("Asset deleted successfully");
+          fetchEquipment();
+        } else {
+          const mockPatchRes = await fetch(`/api/v1/equipment/${id}/status`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status: 'MAINTENANCE' }),
+          });
+          const patchJson = await mockPatchRes.json();
+          if (patchJson.success) {
+            showToast("Asset status set to MAINTENANCE (Delete Fallback)");
+            fetchEquipment();
+          } else {
+            showToast(json.message || "Failed to update asset", "error");
+          }
+        }
+      } catch (err) {
+        showToast("Error updating asset", "error");
+      }
+    }
+  };
+
   // Handler for Settings
   const handleSaveSettings = async (e) => {
     e.preventDefault();
@@ -605,84 +643,104 @@ export const CatalogManager = () => {
                 Loading equipment units...
               </div>
             ) : (
-              <div
-                className="w-full bg-[#111A2E] light:bg-[#FAF9F6] border border-slate-800 light:border-[#E6DFD5] rounded-2xl overflow-hidden mt-6"
+              <div 
+                className="w-full my-4 rounded-2xl border border-slate-800 light:border-[#E6DFD5] bg-[#111A2E] light:bg-[#FAF9F6]"
+                style={{
+                  width: '100%',
+                  maxWidth: '100%',
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  WebkitOverflowScrolling: 'touch',
+                  position: 'relative',
+                  display: 'block'
+                }}
               >
-                <div className="w-full overflow-x-auto overflow-y-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
-                  <table style={{ width: '100%', minWidth: '620px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <table 
+                  style={{
+                    width: '100%',
+                    minWidth: '760px', /* Enforces wide canvas so no column is compressed or hidden */
+                    borderCollapse: 'collapse',
+                    textAlign: 'left'
+                  }}
+                >
                   <thead>
-                    <tr style={{ borderBottom: '1px solid #334155', backgroundColor: '#0F172A' }}>
-                      <th style={{ padding: '16px', color: '#94A3B8', fontSize: '13px' }}>Asset Tag</th>
-                      <th style={{ padding: '16px', color: '#94A3B8', fontSize: '13px' }}>Linked Service</th>
-                      <th style={{ padding: '16px', color: '#94A3B8', fontSize: '13px' }}>Condition</th>
-                      <th style={{ padding: '16px', color: '#94A3B8', fontSize: '13px' }}>Status</th>
-                      <th style={{ padding: '16px', color: '#94A3B8', fontSize: '13px' }}>Action</th>
+                    <tr style={{ borderBottom: '1px solid #1E293B', backgroundColor: 'rgba(15, 23, 42, 0.6)' }}>
+                      <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: '800', color: '#94A3B8', width: '130px' }}>ASSET TAG</th>
+                      <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: '800', color: '#94A3B8', minWidth: '180px' }}>LINKED SERVICE</th>
+                      <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: '800', color: '#94A3B8', width: '130px' }}>CONDITION</th>
+                      <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: '800', color: '#94A3B8', width: '140px' }}>STATUS</th>
+                      <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: '800', color: '#94A3B8', width: '140px', textAlign: 'right' }}>ACTIONS</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody style={{ divideY: '1px solid #1E293B' }}>
                     {equipment.map((item) => (
-                      <tr key={item.id} style={{ borderBottom: '1px solid #334155' }}>
-                        <td style={{ padding: '16px', fontWeight: '700', color: '#F59E0B' }}>
+                      <tr key={item.id} style={{ borderBottom: '1px solid rgba(30, 41, 59, 0.5)', transition: 'background-color 0.15s ease' }}>
+                        <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: '800', color: '#F59E0B', whiteSpace: 'nowrap' }}>
                           {item.assetTag}
                         </td>
-                        <td style={{ padding: '16px', color: '#F8FAFC' }}>
-                          {item.service?.name || 'N/A'}
+                        <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: '600', color: '#E2E8F0', whiteSpace: 'nowrap' }}>
+                          {item.service?.name || item.serviceName || item.name || 'N/A'}
                         </td>
-                        <td style={{ padding: '16px', color: '#94A3B8' }}>{item.condition}</td>
-                        <td style={{ padding: '16px' }}>
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: '700',
-                              whiteSpace: 'nowrap',
-                              backgroundColor:
-                                item.status === 'AVAILABLE'
-                                  ? 'rgba(16,185,129,0.15)'
-                                  : item.status === 'MAINTENANCE' || item.status === 'DAMAGED'
-                                  ? 'rgba(239,68,68,0.15)'
-                                  : 'rgba(245,158,11,0.15)',
-                              color:
-                                item.status === 'AVAILABLE'
-                                  ? '#10B981'
-                                  : item.status === 'MAINTENANCE' || item.status === 'DAMAGED'
-                                  ? '#EF4444'
-                                  : '#F59E0B',
-                            }}
-                          >
-                            {item.status}
+                        <td style={{ padding: '14px 16px', fontSize: '12px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                          {item.condition || 'GOOD'}
+                        </td>
+                        <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '4px 12px',
+                            borderRadius: '9999px',
+                            fontSize: '11px',
+                            fontWeight: '800',
+                            letterSpacing: '0.5px',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            color: '#34D399',
+                            border: '1px solid rgba(16, 185, 129, 0.3)'
+                          }}>
+                            {item.status || 'AVAILABLE'}
                           </span>
                         </td>
-                        <td style={{ padding: '16px' }}>
-                          <select
-                            value={item.status}
-                            onChange={(e) => handleUpdateAssetStatus(item.id, e.target.value)}
-                            style={{
-                              backgroundColor: '#0F172A',
-                              color: '#F8FAFC',
-                              border: '1px solid #334155',
-                              borderRadius: '6px',
-                              padding: '4px 8px',
-                              fontSize: '12px',
-                            }}
-                          >
-                            <option value="AVAILABLE">AVAILABLE</option>
-                            <option value="RESERVED">RESERVED</option>
-                            <option value="DISPATCHED">DISPATCHED</option>
-                            <option value="IN_USE">IN_USE</option>
-                            <option value="MAINTENANCE">MAINTENANCE</option>
-                            <option value="DAMAGED">DAMAGED</option>
-                          </select>
+                        <td style={{ padding: '14px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleEditEquipment(item)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                backgroundColor: '#1E293B',
+                                color: '#F8FAFC',
+                                border: '1px solid #334155',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEquipment(item.id)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                color: '#F87171',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
             )}
           </div>
         )}
