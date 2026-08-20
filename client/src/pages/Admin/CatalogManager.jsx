@@ -374,14 +374,14 @@ export const CatalogManager = () => {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-3 text-sm sm:text-base font-bold transition-all whitespace-nowrap border-b-2 ${
-                    isActive
-                      ? 'border-amber-500 text-amber-400 font-extrabold'
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
-                  }`}
+                  className="px-4 py-3 text-sm sm:text-base font-bold transition-all whitespace-nowrap"
                   style={{
                     backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: isActive ? '2px solid #C97A13' : '2px solid transparent',
+                    color: isActive ? '#C97A13' : 'var(--text-secondary)',
                     cursor: 'pointer',
+                    fontWeight: isActive ? '800' : '600',
                   }}
                 >
                   {tab.label}
