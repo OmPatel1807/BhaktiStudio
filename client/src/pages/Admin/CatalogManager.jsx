@@ -4,7 +4,7 @@ import { formatCurrency } from '../../utils/formatters';
 
 export const CatalogManager = () => {
   const { token } = useAuth();
-  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'equipment' | 'settings'
+  const [activeTab, setActiveTab] = useState('SERVICES'); // 'SERVICES' | 'EQUIPMENT' | 'SETTINGS'
 
   // Service Catalog State
   const [services, setServices] = useState([]);
@@ -102,9 +102,9 @@ export const CatalogManager = () => {
   };
 
   useEffect(() => {
-    if (activeTab === 'catalog') fetchServices();
-    if (activeTab === 'equipment') fetchEquipment();
-    if (activeTab === 'settings') fetchSettings();
+    if (activeTab === 'SERVICES') fetchServices();
+    if (activeTab === 'EQUIPMENT') fetchEquipment();
+    if (activeTab === 'SETTINGS') fetchSettings();
   }, [activeTab, statusFilter]);
 
   // Handlers for Catalog
@@ -323,7 +323,7 @@ export const CatalogManager = () => {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            {activeTab === 'catalog' && (
+            {activeTab === 'SERVICES' && (
               <button
                 type="button"
                 onClick={() => setShowAddServiceModal(true)}
@@ -340,7 +340,7 @@ export const CatalogManager = () => {
                 + Add Service
               </button>
             )}
-            {activeTab === 'equipment' && (
+            {activeTab === 'EQUIPMENT' && (
               <button
                 type="button"
                 onClick={() => setShowAddAssetModal(true)}
@@ -360,42 +360,69 @@ export const CatalogManager = () => {
           </div>
         </div>
 
-        {/* Category / Feature Tabs Bar */}
-        <div className="w-full border-b border-slate-800 light:border-[#E6DFD5] overflow-x-auto no-scrollbar mb-6 mt-6">
-          <div className="flex gap-4 sm:gap-6 min-w-max pb-1">
-            {[
-              { id: 'catalog', label: '📦 Service Catalog' },
-              { id: 'equipment', label: '🧰 Physical Equipment Tracker' },
-              { id: 'settings', label: '⚙️ Business Settings Engine' },
-            ].map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className="px-4 py-3 text-sm sm:text-base font-bold transition-all whitespace-nowrap"
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    borderBottom: isActive ? '2px solid #C97A13' : '2px solid transparent',
-                    color: isActive ? '#C97A13' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    fontWeight: isActive ? '800' : '600',
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+{/* Navigation Tabs Bar */}
+<div style={{
+  width: '100%',
+  borderBottom: '1px solid #1E293B',
+  marginBottom: '28px',
+  marginTop: '16px',
+  overflowX: 'auto',
+  WebkitOverflowScrolling: 'touch'
+}}>
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '32px',
+    minWidth: 'max-content',
+    paddingBottom: '2px'
+  }}>
+    {[
+      { id: 'SERVICES', label: 'Service Catalog', icon: '📦' },
+      { id: 'EQUIPMENT', label: 'Physical Equipment Tracker', icon: '🧰' },
+      { id: 'SETTINGS', label: 'Business Settings Engine', icon: '⚙️' }
+    ].map((tab) => {
+      const isActive = activeTab === tab.id;
+      return (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => setActiveTab(tab.id)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 4px 14px 4px',
+            fontSize: '14px',
+            fontWeight: isActive ? '800' : '600',
+            color: isActive ? '#F59E0B' : '#94A3B8',
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderBottom: isActive ? '3px solid #F59E0B' : '3px solid transparent',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease-in-out',
+            outline: 'none',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseEnter={(e) => {
+            if (!isActive) e.currentTarget.style.color = '#E2E8F0';
+          }}
+          onMouseLeave={(e) => {
+            if (!isActive) e.currentTarget.style.color = '#94A3B8';
+          }}
+        >
+          <span style={{ fontSize: '16px' }}>{tab.icon}</span>
+          <span>{tab.label}</span>
+        </button>
+      );
+    })}
+  </div>
+</div>
       </div>
 
       {/* Main Content Area */}
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {/* TAB 1: SERVICE CATALOG */}
-        {activeTab === 'catalog' && (
+        {activeTab === 'SERVICES' && (
           <div>
             {loadingServices ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
@@ -546,7 +573,7 @@ export const CatalogManager = () => {
         )}
 
         {/* TAB 2: PHYSICAL EQUIPMENT TRACKER */}
-        {activeTab === 'equipment' && (
+        {activeTab === 'EQUIPMENT' && (
           <div>
             {/* Filters */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'center' }}>
@@ -661,7 +688,7 @@ export const CatalogManager = () => {
         )}
 
         {/* TAB 3: BUSINESS SETTINGS ENGINE */}
-        {activeTab === 'settings' && (
+        {activeTab === 'SETTINGS' && (
           <div
             style={{
               backgroundColor: '#1E293B',
