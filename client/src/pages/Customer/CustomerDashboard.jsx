@@ -198,108 +198,196 @@ export const CustomerDashboard = () => {
           </div>
         ) : (
           <div
-            className="w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
               gap: '24px',
-              alignItems: 'start',
+              alignItems: 'stretch',
               width: '100%',
+              marginTop: '24px'
             }}
           >
-            {orders.map((ord) => {
-              // Use existing resolution helper with comprehensive fallbacks
-              const { displayTotal, label: totalLabel } = typeof resolveOrderDisplayTotal === 'function'
-                ? resolveOrderDisplayTotal(ord)
-                : {
-                    displayTotal: Number(ord.quotations?.[0]?.grandTotal || ord.quotations?.[0]?.totalAmount || ord.totalAmount || ord.grandTotal || 0),
-                    label: 'Quotation Total'
-                  };
+            {orders && orders.length > 0 ? (
+              orders.map((ord) => {
+                // Safe total and label resolution
+                const rawTotal = ord.quotations?.[0]?.grandTotal ?? ord.totalAmount ?? ord.grandTotal ?? 0;
+                const displayTotal = Number(rawTotal);
 
-              const finalAmount = Number(displayTotal || ord.quotations?.[0]?.grandTotal || ord.totalAmount || 0);
-
-              return (
-                <div
-                  key={ord.id || ord._id}
-                  className="w-full bg-[#111A2E] light:bg-[#FAF9F6] border border-slate-800 light:border-[#E6DFD5] rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-lg hover:border-amber-500/40 transition-all h-full"
-                >
-                  {/* Top Header */}
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="text-xs font-extrabold tracking-wider text-amber-400">
-                        {ord.orderNumber || `BS-2026-${String(ord.id).padStart(5, '0')}`}
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                        {ord.status || 'SUBMITTED'}
-                      </span>
-                    </div>
-
-                    {/* Event Details */}
-                    <h3 className="text-base sm:text-lg font-bold text-slate-100 light:text-[#2B2B2B] mb-2">
-                      {ord.eventType || 'Event Booking'}
-                    </h3>
-                    <div className="space-y-1 text-xs text-slate-400 mb-6">
-                      <p className="flex items-center gap-1.5 truncate">
-                        <span>📍 Venue:</span> <span className="text-slate-300 font-medium">{ord.venueAddress || 'Not specified'}</span>
-                      </p>
-                      <p className="flex items-center gap-1.5 truncate">
-                        <span>🗓 Event Date:</span> <span className="text-slate-300 font-medium">{typeof formatDateTime === 'function' ? formatDateTime(ord.eventDate) : (ord.eventDate || 'TBD')}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Card Footer: Real Resolved Quotation Total & Responsive Actions */}
-                  <div className="pt-4 border-t border-slate-800/80 light:border-[#E6DFD5] flex flex-col gap-3.5 mt-auto">
+                return (
+                  <div
+                    key={ord.id || ord._id}
+                    style={{
+                      backgroundColor: '#111A2E',
+                      border: '1px solid #1E293B',
+                      borderRadius: '20px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '20px',
+                      boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.4)',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    {/* Card Top: Order Number & Status Pill */}
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                        {totalLabel || 'QUOTATION TOTAL'}
-                      </span>
-                      <span className="text-2xl font-black text-amber-400 light:text-[#2B2B2B]">
-                        ₹{finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <span style={{ fontWeight: '800', color: '#F59E0B', fontSize: '15px', letterSpacing: '0.5px' }}>
+                          {ord.orderNumber || `BS-2026-${String(ord.id).padStart(5, '0')}`}
+                        </span>
+                        <span
+                          style={{
+                            backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                            color: '#F59E0B',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            padding: '4px 12px',
+                            borderRadius: '9999px',
+                            fontSize: '11px',
+                            fontWeight: '800',
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase'
+                          }}
+                        >
+                          {ord.status || 'SUBMITTED'}
+                        </span>
+                      </div>
+
+                      {/* Event Title */}
+                      <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 10px 0', color: '#FFFFFF' }}>
+                        {ord.eventType || 'Event Booking'}
+                      </h3>
+
+                      {/* Event Location & Date */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: '#94A3B8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>📍</span>
+                          <strong style={{ color: '#64748B' }}>Venue:</strong>
+                          <span style={{ color: '#CBD5E1' }}>{ord.venueAddress || 'Surat'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>🗓️</span>
+                          <strong style={{ color: '#64748B' }}>Event Date:</strong>
+                          <span style={{ color: '#CBD5E1' }}>
+                            {typeof formatDateTime === 'function' ? formatDateTime(ord.eventDate) : (ord.eventDate || 'TBD')}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col gap-2.5 w-full">
-                      {ord.paymentStatus !== 'PAID' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const latestQuotation = ord.quotations?.[0];
-                            if (typeof setPaymentModalState === 'function') {
-                              setPaymentModalState({ isOpen: true, order: ord, quotation: latestQuotation });
-                            }
-                          }}
-                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-[0.99] text-slate-950 font-extrabold rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <span>💳</span> Pay Online Now
-                        </button>
-                      )}
+                    {/* Card Bottom: Quotation Total & Action Buttons */}
+                    <div
+                      style={{
+                        borderTop: '1px solid #1E293B',
+                        paddingTop: '18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '14px',
+                        marginTop: 'auto'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          QUOTATION TOTAL
+                        </div>
+                        <div style={{ fontSize: '24px', fontWeight: '900', color: '#F59E0B', marginTop: '2px' }}>
+                          ₹{displayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                      </div>
 
-                      <div className="grid grid-cols-2 gap-2.5 w-full">
-                        {ord.status === 'SUBMITTED' ? (
+                      {/* Button Actions Group */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                        {ord.paymentStatus !== 'PAID' && (
                           <button
                             type="button"
-                            onClick={() => typeof handleEditOrder === 'function' && handleEditOrder(ord)}
-                            className="w-full py-2 bg-slate-800/70 hover:bg-slate-700 light:bg-[#FAF9F6] text-slate-200 light:text-[#2B2B2B] border border-slate-700 light:border-[#E6DFD5] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                            onClick={() => {
+                              const latestQuotation = ord.quotations?.[0];
+                              if (typeof setPaymentModalState === 'function') {
+                                setPaymentModalState({ isOpen: true, order: ord, quotation: latestQuotation });
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              backgroundColor: '#F59E0B',
+                              color: '#090D16',
+                              padding: '11px 16px',
+                              borderRadius: '12px',
+                              fontWeight: '800',
+                              fontSize: '13px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
                           >
-                            <span>✏️</span> Edit Order
+                            <span>💳</span> Pay Online Now
                           </button>
-                        ) : null}
+                        )}
 
-                        <button
-                          type="button"
-                          onClick={() => typeof setSelectedOrder === 'function' && setSelectedOrder(ord)}
-                          className={`w-full py-2 bg-[#0B1120] hover:bg-slate-900 light:bg-[#FAF9F6] text-slate-300 light:text-[#2B2B2B] border border-slate-800 light:border-[#E6DFD5] rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer ${ord.status !== 'SUBMITTED' ? 'col-span-2' : ''}`}
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: ord.status === 'SUBMITTED' ? '1fr 1fr' : '1fr',
+                            gap: '10px',
+                            width: '100%'
+                          }}
                         >
-                          <span>👁️</span> View Details
-                        </button>
+                          {ord.status === 'SUBMITTED' && (
+                            <button
+                              type="button"
+                              onClick={() => typeof handleEditOrder === 'function' && handleEditOrder(ord)}
+                              style={{
+                                padding: '10px 12px',
+                                backgroundColor: 'rgba(30, 41, 59, 0.7)',
+                                color: '#F8FAFC',
+                                border: '1px solid #334155',
+                                borderRadius: '12px',
+                                fontWeight: '700',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px'
+                              }}
+                            >
+                              <span>✏️</span> Edit Order
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => typeof setSelectedOrder === 'function' && setSelectedOrder(ord)}
+                            style={{
+                              padding: '10px 12px',
+                              backgroundColor: '#0B1120',
+                              color: '#CBD5E1',
+                              border: '1px solid #1E293B',
+                              borderRadius: '12px',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '5px'
+                            }}
+                          >
+                            <span>👁️</span> View Details
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div style={{ gridColumn: '1 / -1', padding: '48px 0', textAlign: 'center', color: '#64748B' }}>
+                No active orders found.
+              </div>
+            )}
           </div>
         )}
       </div>
