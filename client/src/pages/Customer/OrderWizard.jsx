@@ -268,7 +268,7 @@ export const OrderWizard = () => {
         minHeight: '100dvh',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
-        padding: '32px 16px',
+        padding: 'clamp(16px, 4vw, 32px) clamp(10px, 3vw, 16px)',
         fontFamily: 'Inter, system-ui, sans-serif',
         transition: 'background-color 0.3s ease, color 0.3s ease',
       }}

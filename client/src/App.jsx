@@ -49,7 +49,7 @@ function NavigationBar() {
       style={{
         backgroundColor: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-color)',
-        padding: '16px 24px',
+        padding: '16px clamp(12px, 3vw, 24px)',
         position: 'sticky',
         top: 0,
         zIndex: 100,

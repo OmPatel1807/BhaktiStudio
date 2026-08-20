@@ -138,12 +138,11 @@ export const LoginGateway = ({ onLoginSuccess }) => {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: 'var(--bg-primary)',
-        color: 'var(--text-primary)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '32px 24px',
+        padding: '32px clamp(12px, 4vw, 24px)',
         fontFamily: 'Inter, system-ui, sans-serif',
         transition: 'background-color 0.3s ease, color 0.3s ease',
       }}
@@ -155,8 +154,9 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           backgroundColor: 'var(--bg-surface)',
           borderRadius: '28px',
           border: '1px solid var(--border-color)',
-          padding: '44px 36px',
+          padding: 'clamp(24px, 6vw, 44px) clamp(16px, 5vw, 36px)',
           boxShadow: '0 25px 40px -10px rgba(0, 0, 0, 0.12)',
+          boxSizing: 'border-box',
         }}
       >
         {/* Header Branding */}
@@ -194,12 +194,11 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           className="flex bg-slate-900/80 light:bg-[#E6DFD5] p-1 rounded-xl mb-5 w-full border border-slate-700/50 light:border-[#D6CEC5]"
           style={{
             display: 'flex',
-            backgroundColor: 'var(--bg-input)',
+            backgroundColor: 'var(--border-color)',
             padding: '4px',
-            borderRadius: '14px',
-            marginBottom: '24px',
+            borderRadius: '12px',
+            marginBottom: '20px',
             width: '100%',
-            border: '1px solid var(--border-color)',
           }}
         >
           <button
@@ -208,22 +207,16 @@ export const LoginGateway = ({ onLoginSuccess }) => {
               setAuthMode('LOGIN');
               setErrorMsg(null);
             }}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-              authMode === 'LOGIN'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
-                : 'text-slate-400 light:text-slate-600 hover:text-slate-200'
-            }`}
             style={{
               flex: 1,
-              padding: '10px 14px',
+              padding: '10px',
               borderRadius: '10px',
-              fontSize: '14px',
-              fontWeight: '800',
               border: 'none',
               cursor: 'pointer',
-              backgroundColor: authMode === 'LOGIN' ? '#F59E0B' : 'transparent',
-              color: authMode === 'LOGIN' ? '#0F172A' : 'var(--text-secondary)',
-              boxShadow: authMode === 'LOGIN' ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none',
+              backgroundColor: authMode === 'LOGIN' ? 'var(--bg-surface)' : 'transparent',
+              color: authMode === 'LOGIN' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              fontWeight: '800',
+              fontSize: '14px',
               transition: 'all 0.2s ease',
             }}
           >
@@ -232,25 +225,19 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           <button
             type="button"
             onClick={() => {
-              setAuthMode('SIGNUP');
+              setAuthMode('REGISTER');
               setErrorMsg(null);
             }}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-              authMode === 'SIGNUP'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
-                : 'text-slate-400 light:text-slate-600 hover:text-slate-200'
-            }`}
             style={{
               flex: 1,
-              padding: '10px 14px',
+              padding: '10px',
               borderRadius: '10px',
-              fontSize: '14px',
-              fontWeight: '800',
               border: 'none',
               cursor: 'pointer',
-              backgroundColor: authMode === 'SIGNUP' ? '#F59E0B' : 'transparent',
-              color: authMode === 'SIGNUP' ? '#0F172A' : 'var(--text-secondary)',
-              boxShadow: authMode === 'SIGNUP' ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none',
+              backgroundColor: authMode === 'REGISTER' ? 'var(--bg-surface)' : 'transparent',
+              color: authMode === 'REGISTER' ? 'var(--text-primary)' : 'var(--text-secondary)',
+              fontWeight: '800',
+              fontSize: '14px',
               transition: 'all 0.2s ease',
             }}
           >
@@ -258,15 +245,15 @@ export const LoginGateway = ({ onLoginSuccess }) => {
           </button>
         </div>
 
-        {/* Role Selection Label */}
+        {/* Selected Role Input Label */}
         <label
           style={{
             display: 'block',
-            fontSize: '12px',
+            fontSize: '13px',
             fontWeight: '800',
-            color: '#C97A13',
-            letterSpacing: '1.5px',
+            color: 'var(--text-secondary)',
             textTransform: 'uppercase',
+            letterSpacing: '0.5px',
             marginBottom: '12px',
           }}
         >
@@ -274,7 +261,7 @@ export const LoginGateway = ({ onLoginSuccess }) => {
         </label>
 
         {/* Role Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'clamp(6px, 1.5vw, 12px)', marginBottom: '24px' }}>
           {[
             { role: USER_ROLES.CUSTOMER, label: 'Customer', icon: '👤' },
             { role: USER_ROLES.WORKER, label: 'Worker', icon: '🛠️' },
@@ -293,18 +280,18 @@ export const LoginGateway = ({ onLoginSuccess }) => {
                   backgroundColor: isSelected ? 'rgba(201, 122, 19, 0.15)' : 'var(--bg-input)',
                   border: isSelected ? '2px solid #C97A13' : '1px solid var(--border-color)',
                   borderRadius: '16px',
-                  padding: '16px 10px',
+                  padding: 'clamp(10px, 3vw, 16px) clamp(4px, 1.5vw, 10px)',
                   cursor: 'pointer',
                   color: isSelected ? '#C97A13' : 'var(--text-primary)',
                   transition: 'all 0.2s ease',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '6px',
+                  gap: 'clamp(4px, 1vw, 6px)',
                 }}
               >
-                <span style={{ fontSize: '22px' }}>{item.icon}</span>
-                <span style={{ fontSize: '14px', fontWeight: '700' }}>{item.label}</span>
+                <span style={{ fontSize: 'clamp(18px, 4vw, 22px)' }}>{item.icon}</span>
+                <span style={{ fontSize: 'clamp(11px, 2.5vw, 14px)', fontWeight: '700' }}>{item.label}</span>
               </button>
             );
           })}

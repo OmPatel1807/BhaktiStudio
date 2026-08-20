@@ -57,12 +57,12 @@ export const CustomerDashboard = () => {
         minHeight: '100vh',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
-        padding: '48px 32px',
+        padding: 'clamp(20px, 4vw, 48px) clamp(12px, 3vw, 32px)',
         fontFamily: 'Inter, system-ui, sans-serif',
         transition: 'background-color 0.3s ease, color 0.3s ease',
       }}
     >
-      <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         {paymentSuccessMsg && (
           <div
             style={{
