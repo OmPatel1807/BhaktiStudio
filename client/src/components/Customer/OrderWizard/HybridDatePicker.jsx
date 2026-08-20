@@ -10,15 +10,22 @@ export const HybridDatePicker = ({ value, onChange, minDate }) => {
   const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
   const startDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
 
-  const handleSelectDay = (day) => {
-    const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+  const handleSelectDay = (dayNum) => {
+    const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayNum);
     if (selectedDate < today) return;
 
-    const yyyy = selectedDate.getFullYear();
-    const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(selectedDate.getDate()).padStart(2, '0');
-    const formatted = `${yyyy}-${mm}-${dd}`;
-    onChange(formatted);
+    // Current viewing year and 0-indexed month from calendar state
+    const currentYear = currentMonth.getFullYear();
+    const monthNum = currentMonth.getMonth() + 1; // Convert 0-11 to 1-12
+
+    const formattedYear = String(currentYear);
+    const formattedMonth = String(monthNum).padStart(2, '0');
+    const formattedDay = String(dayNum).padStart(2, '0');
+
+    // Direct YYYY-MM-DD string without UTC timezone offset corruption
+    const dateString = `${formattedYear}-${formattedMonth}-${formattedDay}`;
+
+    onChange(dateString);
     setShowCalendar(false);
   };
 
@@ -117,11 +124,15 @@ export const HybridDatePicker = ({ value, onChange, minDate }) => {
               const dayNum = i + 1;
               const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayNum);
               const isPast = dateObj < today;
-              const y = dateObj.getFullYear();
-              const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-              const d = String(dateObj.getDate()).padStart(2, '0');
-              const localDateStr = `${y}-${m}-${d}`;
-              const isSelected = value === localDateStr;
+              const isSelected = (() => {
+                if (!value) return false;
+                const [selYear, selMonth, selDay] = value.split('T')[0].split('-').map(Number);
+                return (
+                  currentMonth.getFullYear() === selYear &&
+                  (currentMonth.getMonth() + 1) === selMonth &&
+                  dayNum === selDay
+                );
+              })();
 
               return (
                 <button
