@@ -208,180 +208,89 @@ export const CustomerDashboard = () => {
             }}
           >
             {orders.map((ord) => {
-              // LOOP 40: Unified display total resolution
-              const { displayTotal, label: totalLabel } = resolveOrderDisplayTotal(ord);
+              // Use existing resolution helper with comprehensive fallbacks
+              const { displayTotal, label: totalLabel } = typeof resolveOrderDisplayTotal === 'function'
+                ? resolveOrderDisplayTotal(ord)
+                : {
+                    displayTotal: Number(ord.quotations?.[0]?.grandTotal || ord.quotations?.[0]?.totalAmount || ord.totalAmount || ord.grandTotal || 0),
+                    label: 'Quotation Total'
+                  };
+
+              const finalAmount = Number(displayTotal || ord.quotations?.[0]?.grandTotal || ord.totalAmount || 0);
 
               return (
                 <div
-                  key={ord.id}
-                  style={{
-                    backgroundColor: 'var(--bg-surface)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '24px',
-                    padding: '24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    gap: '20px',
-                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.08)',
-                    transition: 'transform 0.2s ease, border-color 0.2s ease',
-                  }}
+                  key={ord.id || ord._id}
+                  className="w-full bg-[#111A2E] light:bg-[#FAF9F6] border border-slate-800 light:border-[#E6DFD5] rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-lg hover:border-amber-500/40 transition-all h-full"
                 >
-                  {/* Card Header Row: Order Number & Status Pill */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '800', color: '#C97A13', fontSize: '18px' }}>
-                      {ord.orderNumber}
-                    </span>
-                    <span
-                      style={{
-                        backgroundColor: 'rgba(201, 122, 19, 0.15)',
-                        color: '#C97A13',
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        fontSize: '12px',
-                        fontWeight: '800',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
-                      {ord.status}
-                    </span>
-                  </div>
-
-                  {/* Card Main Body: Event Title & Location Details */}
+                  {/* Top Header */}
                   <div>
-                    <h3 style={{ fontSize: '22px', fontWeight: '800', margin: '0 0 10px 0', color: 'var(--text-primary)' }}>
-                      {ord.eventType}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="text-xs font-extrabold tracking-wider text-amber-400">
+                        {ord.orderNumber || `BS-2026-${String(ord.id).padStart(5, '0')}`}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        {ord.status || 'SUBMITTED'}
+                      </span>
+                    </div>
+
+                    {/* Event Details */}
+                    <h3 className="text-base sm:text-lg font-bold text-slate-100 light:text-[#2B2B2B] mb-2">
+                      {ord.eventType || 'Event Booking'}
                     </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>
-                      <div>📍 <strong style={{ color: 'var(--text-secondary)' }}>Venue:</strong> {ord.venueAddress}</div>
-                      <div>🗓️ <strong style={{ color: 'var(--text-secondary)' }}>Event Date:</strong> {formatDateTime(ord.eventDate)}</div>
+                    <div className="space-y-1 text-xs text-slate-400 mb-6">
+                      <p className="flex items-center gap-1.5 truncate">
+                        <span>📍 Venue:</span> <span className="text-slate-300 font-medium">{ord.venueAddress || 'Not specified'}</span>
+                      </p>
+                      <p className="flex items-center gap-1.5 truncate">
+                        <span>🗓 Event Date:</span> <span className="text-slate-300 font-medium">{typeof formatDateTime === 'function' ? formatDateTime(ord.eventDate) : (ord.eventDate || 'TBD')}</span>
+                      </p>
                     </div>
                   </div>
 
-                  {/* Card Footer: Quotation Total & Action Buttons */}
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px',
-                    borderTop: '1px solid rgba(30, 41, 59, 0.7)',
-                    paddingTop: '18px',
-                    marginTop: 'auto'
-                  }}>
-                    {/* Total Display */}
+                  {/* Card Footer: Real Resolved Quotation Total & Responsive Actions */}
+                  <div className="pt-4 border-t border-slate-800/80 light:border-[#E6DFD5] flex flex-col gap-3.5 mt-auto">
                     <div>
-                      <div style={{
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        color: '#94A3B8',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.6px'
-                      }}>
-                        Quotation Total
-                      </div>
-                      <div style={{
-                        fontSize: '24px',
-                        fontWeight: '900',
-                        color: '#F59E0B',
-                        marginTop: '2px'
-                      }}>
-                        ₹{Number(ord.totalAmount || ord.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                        {totalLabel || 'QUOTATION TOTAL'}
+                      </span>
+                      <span className="text-2xl font-black text-amber-400 light:text-[#2B2B2B]">
+                        ₹{finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
                     </div>
 
-                    {/* Button Group Container */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                      {/* 1. Primary CTA: Pay Online Now (Full Width) */}
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-2.5 w-full">
                       {ord.paymentStatus !== 'PAID' && (
                         <button
                           type="button"
                           onClick={() => {
                             const latestQuotation = ord.quotations?.[0];
-                            setPaymentModalState({ isOpen: true, order: ord, quotation: latestQuotation });
+                            if (typeof setPaymentModalState === 'function') {
+                              setPaymentModalState({ isOpen: true, order: ord, quotation: latestQuotation });
+                            }
                           }}
-                          style={{
-                            width: '100%',
-                            backgroundColor: '#F59E0B',
-                            color: '#090D16',
-                            padding: '11px 16px',
-                            borderRadius: '12px',
-                            fontWeight: '800',
-                            fontSize: '13px',
-                            border: 'none',
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 14px rgba(245, 158, 11, 0.3)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            transition: 'transform 0.15s ease, background-color 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D97706'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F59E0B'}
+                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 active:scale-[0.99] text-slate-950 font-extrabold rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <span>💳</span> Pay Online Now
                         </button>
                       )}
 
-                      {/* 2. Secondary Row: Edit Order & View Details (Side-by-Side 50/50) */}
-                      <div style={{ display: 'grid', gridTemplateColumns: ord.status === 'SUBMITTED' ? '1fr 1fr' : '1fr', gap: '10px', width: '100%' }}>
-                        {ord.status === 'SUBMITTED' && (
+                      <div className="grid grid-cols-2 gap-2.5 w-full">
+                        {ord.status === 'SUBMITTED' ? (
                           <button
                             type="button"
-                            onClick={() => handleEditOrder(ord)}
-                            style={{
-                              padding: '10px 14px',
-                              backgroundColor: 'rgba(30, 41, 59, 0.5)',
-                              color: '#F8FAFC',
-                              border: '1px solid #334155',
-                              borderRadius: '12px',
-                              fontWeight: '700',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              transition: 'all 0.15s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(51, 65, 85, 0.8)';
-                              e.currentTarget.style.borderColor = '#F59E0B';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.5)';
-                              e.currentTarget.style.borderColor = '#334155';
-                            }}
+                            onClick={() => typeof handleEditOrder === 'function' && handleEditOrder(ord)}
+                            className="w-full py-2 bg-slate-800/70 hover:bg-slate-700 light:bg-[#FAF9F6] text-slate-200 light:text-[#2B2B2B] border border-slate-700 light:border-[#E6DFD5] rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
                           >
                             <span>✏️</span> Edit Order
                           </button>
-                        )}
+                        ) : null}
 
                         <button
                           type="button"
-                          onClick={() => setSelectedOrder(ord)}
-                          style={{
-                            padding: '10px 14px',
-                            backgroundColor: '#0F172A',
-                            color: '#E2E8F0',
-                            border: '1px solid #1E293B',
-                            borderRadius: '12px',
-                            fontWeight: '700',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            transition: 'all 0.15s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#1E293B';
-                            e.currentTarget.style.color = '#FFFFFF';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = '#0F172A';
-                            e.currentTarget.style.color = '#E2E8F0';
-                          }}
+                          onClick={() => typeof setSelectedOrder === 'function' && setSelectedOrder(ord)}
+                          className={`w-full py-2 bg-[#0B1120] hover:bg-slate-900 light:bg-[#FAF9F6] text-slate-300 light:text-[#2B2B2B] border border-slate-800 light:border-[#E6DFD5] rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer ${ord.status !== 'SUBMITTED' ? 'col-span-2' : ''}`}
                         >
                           <span>👁️</span> View Details
                         </button>
