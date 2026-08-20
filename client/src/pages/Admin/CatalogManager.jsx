@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Package, Cpu, SlidersHorizontal } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -415,9 +416,9 @@ export const CatalogManager = () => {
     paddingBottom: '2px'
   }}>
     {[
-      { id: 'SERVICES', label: 'Service Catalog', icon: '📦' },
-      { id: 'EQUIPMENT', label: 'Physical Equipment Tracker', icon: '🧰' },
-      { id: 'SETTINGS', label: 'Business Settings Engine', icon: '⚙️' }
+      { id: 'SERVICES', label: 'Service Catalog', icon: Package },
+      { id: 'EQUIPMENT', label: 'Physical Equipment Tracker', icon: Cpu },
+      { id: 'SETTINGS', label: 'Business Settings Engine', icon: SlidersHorizontal }
     ].map((tab) => {
       const isActive = activeTab === tab.id;
       return (
@@ -448,7 +449,7 @@ export const CatalogManager = () => {
             if (!isActive) e.currentTarget.style.color = '#94A3B8';
           }}
         >
-          <span style={{ fontSize: '16px' }}>{tab.icon}</span>
+          <tab.icon size={16} style={{ flexShrink: 0 }} />
           <span>{tab.label}</span>
         </button>
       );

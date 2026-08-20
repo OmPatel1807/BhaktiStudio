@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Calendar as CalendarIcon, Clock as ClockIcon } from 'lucide-react';
 import { HybridDatePicker } from './HybridDatePicker';
 import { TimeWheelPicker } from '../../Common/TimeWheelPicker';
 
@@ -255,11 +256,12 @@ export const Step1DateVenue = ({
                   right: '12px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  fontSize: '20px',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
-                ⏰
+                <ClockIcon className="text-amber-400" size={16} />
               </button>
             </div>
 
@@ -302,11 +304,12 @@ export const Step1DateVenue = ({
                   right: '12px',
                   backgroundColor: 'transparent',
                   border: 'none',
-                  fontSize: '20px',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
-                ⏰
+                <ClockIcon className="text-amber-400" size={16} />
               </button>
             </div>
 
@@ -320,8 +323,8 @@ export const Step1DateVenue = ({
         </div>
 
         {eventDetails.isMultiDay && (
-          <div style={{ padding: '12px 16px', backgroundColor: 'rgba(201, 122, 19, 0.1)', border: '1px dashed #C97A13', borderRadius: '12px', color: '#D97706', fontSize: '14px', fontWeight: '700' }}>
-            🗓️ Total Duration: {eventDetails.totalDays} Consecutive Days ({eventDetails.eventDate || 'Select Start'} to {eventDetails.endDate || 'Select End'})
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', backgroundColor: 'rgba(201, 122, 19, 0.1)', border: '1px dashed #C97A13', borderRadius: '12px', color: '#D97706', fontSize: '14px', fontWeight: '700' }}>
+            <CalendarIcon size={16} /> Total Duration: {eventDetails.totalDays} Consecutive Days ({eventDetails.eventDate || 'Select Start'} to {eventDetails.endDate || 'Select End'})
           </div>
         )}
 

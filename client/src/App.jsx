@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Menu, X } from 'lucide-react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -341,8 +342,6 @@ function NavigationBar() {
               border: '1px solid var(--border-color)',
               borderRadius: '10px',
               padding: '8px 12px',
-              fontSize: '18px',
-              fontWeight: '800',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -350,7 +349,11 @@ function NavigationBar() {
               flexShrink: 0,
             }}
           >
-            {mobileMenuOpen ? '✕' : '🍔'}
+            {mobileMenuOpen ? (
+              <X className="text-amber-400" size={19} />
+            ) : (
+              <Menu size={19} />
+            )}
           </button>
         </div>
       </div>

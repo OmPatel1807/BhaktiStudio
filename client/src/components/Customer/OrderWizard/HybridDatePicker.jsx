@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Calendar } from 'lucide-react';
 
 export const HybridDatePicker = ({ value, onChange, minDate }) => {
   const [showCalendar, setShowCalendar] = useState(false);
@@ -63,12 +64,14 @@ export const HybridDatePicker = ({ value, onChange, minDate }) => {
             border: '1px solid #D97706',
             borderRadius: '12px',
             padding: '0 18px',
-            fontSize: '20px',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          📅
+          <Calendar size={18} />
         </button>
       </div>
 
