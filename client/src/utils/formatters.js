@@ -31,6 +31,18 @@ export const calculateSqFt = (widthFeet, heightFeet) => {
  */
 export const formatDateTime = (dateStr) => {
   if (!dateStr) return 'N/A';
+  
+  // If string is in YYYY-MM-DD format, parse locally to prevent UTC offset shifting
+  if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr) && !dateStr.includes('T')) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return new Intl.DateTimeFormat('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+  }
+
   const date = new Date(dateStr);
   return new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',

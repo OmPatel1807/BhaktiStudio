@@ -14,7 +14,10 @@ export const HybridDatePicker = ({ value, onChange, minDate }) => {
     const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     if (selectedDate < today) return;
 
-    const formatted = selectedDate.toISOString().split('T')[0];
+    const yyyy = selectedDate.getFullYear();
+    const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(selectedDate.getDate()).padStart(2, '0');
+    const formatted = `${yyyy}-${mm}-${dd}`;
     onChange(formatted);
     setShowCalendar(false);
   };
@@ -114,7 +117,11 @@ export const HybridDatePicker = ({ value, onChange, minDate }) => {
               const dayNum = i + 1;
               const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayNum);
               const isPast = dateObj < today;
-              const isSelected = value === dateObj.toISOString().split('T')[0];
+              const y = dateObj.getFullYear();
+              const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+              const d = String(dateObj.getDate()).padStart(2, '0');
+              const localDateStr = `${y}-${m}-${d}`;
+              const isSelected = value === localDateStr;
 
               return (
                 <button
