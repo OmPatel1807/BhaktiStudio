@@ -50,6 +50,9 @@ export const OrderWizard = () => {
   const [estimation, setEstimation] = useState(null);
   const [calculatingEstimate, setCalculatingEstimate] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState(null);
+
   // Fetch Services from API
   useEffect(() => {
     const loadCatalog = async () => {
@@ -58,8 +61,11 @@ export const OrderWizard = () => {
         const json = await res.json();
         if (json.success) {
           setAvailableServices(json.data || []);
-          const led = (json.data || []).find((s) => s.name?.includes('LED'));
-          if (led) setSelectedServiceIds([led.id]);
+          const editId = new URLSearchParams(window.location.search).get('edit');
+          if (!editId) {
+            const led = (json.data || []).find((s) => s.name?.includes('LED'));
+            if (led) setSelectedServiceIds([led.id]);
+          }
         }
       } catch (err) {
         console.error('Failed to load services:', err);
@@ -69,6 +75,74 @@ export const OrderWizard = () => {
     };
     loadCatalog();
   }, []);
+
+  // Pre-load order if in edit mode
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (editId) {
+      setIsEditing(true);
+      setEditingOrderId(editId);
+      
+      const fetchOrder = async () => {
+        try {
+          const res = await fetch(`/api/v1/orders/${editId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            const ord = json.data;
+            const fmtDate = ord.eventDate ? ord.eventDate.split('T')[0] : '';
+            const fmtEndDate = ord.endDate ? ord.endDate.split('T')[0] : '';
+
+            setEventDetails({
+              eventType: ord.eventType,
+              eventDate: fmtDate,
+              endDate: fmtEndDate,
+              isMultiDay: !!ord.endDate,
+              totalDays: ord.totalDays || 1,
+              startTime: ord.startTime,
+              endTime: ord.endTime,
+              venueAddress: ord.venueAddress,
+              guestCount: ord.guestCount || 200,
+              notes: ord.notes || '',
+            });
+
+            const isStandard = ['Wedding / Reception', 'Concert / Cultural Fest', 'Corporate Seminar', 'Private Celebration / Party'].includes(ord.eventType);
+            if (!isStandard) {
+              setIsCustomEventType(true);
+              setCustomEventInput(ord.eventType);
+            }
+
+            setSpecifications({
+              ledWidthFeet: ord.ledWidthFeet || 12,
+              ledHeightFeet: ord.ledHeightFeet || 8,
+              transportDistanceKm: ord.distanceKm || 15,
+            });
+
+            if (availableServices && availableServices.length > 0) {
+              const serviceIds = [];
+              const quantities = {};
+              (ord.orderItems || []).forEach((item) => {
+                const match = availableServices.find((s) => s.name === item.serviceName);
+                if (match) {
+                  serviceIds.push(match.id);
+                  quantities[match.id] = item.quantity;
+                }
+              });
+              setSelectedServiceIds(serviceIds);
+              setServiceQuantities(quantities);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to load order for edit:", err);
+        }
+      };
+      
+      if (availableServices && availableServices.length > 0) {
+        fetchOrder();
+      }
+    }
+  }, [availableServices, token]);
 
   // Selected services objects list
   const selectedServicesList = (availableServices || []).filter((s) => selectedServiceIds.includes(s.id));
@@ -142,6 +216,7 @@ export const OrderWizard = () => {
           ledWidthFeet: specifications.ledWidthFeet,
           ledHeightFeet: specifications.ledHeightFeet,
           transportDistanceKm: specifications.transportDistanceKm,
+          totalDays: eventDetails.totalDays || 1,
         }),
       });
 
@@ -156,7 +231,7 @@ export const OrderWizard = () => {
 
   useEffect(() => {
     fetchLiveEstimate();
-  }, [selectedServiceIds, serviceQuantities, specifications]);
+  }, [selectedServiceIds, serviceQuantities, specifications, eventDetails.totalDays]);
 
   const toggleServiceSelection = (id) => {
     if (selectedServiceIds.includes(id)) {
@@ -212,7 +287,7 @@ export const OrderWizard = () => {
         const area = (w && h) ? (w * h) : 1;
         const unitRate = Number(s.baseRate || s.price || 0);
         const qty = Number(serviceQuantities[s.id] || s.quantity || 1);
-        const days = Number(s.days || 1);
+        const days = Number(s.days || eventDetails.totalDays || 1);
         const computedPrice = unitRate * area * qty * days;
 
         return {
@@ -229,8 +304,11 @@ export const OrderWizard = () => {
         };
       });
 
-      const res = await fetch('/api/v1/orders', {
-        method: 'POST',
+      const url = isEditing && editingOrderId ? `/api/v1/orders/${editingOrderId}` : '/api/v1/orders';
+      const method = isEditing && editingOrderId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,

@@ -138,17 +138,91 @@ export const Step1DateVenue = ({
           </div>
         )}
 
-        {/* LOOP 71: RESPONSIVE DATE & TIME GRID (STACKS ON MOBILE, 3 COLS ON DESKTOP) */}
+        {/* Multi-day Booking Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+          <input
+            type="checkbox"
+            id="isMultiDay"
+            checked={!!eventDetails.isMultiDay}
+            onChange={(e) => {
+              const isChecked = e.target.checked;
+              if (!isChecked) {
+                setEventDetails({
+                  ...eventDetails,
+                  isMultiDay: false,
+                  endDate: '',
+                  totalDays: 1
+                });
+              } else {
+                setEventDetails({
+                  ...eventDetails,
+                  isMultiDay: true,
+                  endDate: eventDetails.eventDate || '',
+                  totalDays: 1
+                });
+              }
+            }}
+            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#C97A13' }}
+          />
+          <label htmlFor="isMultiDay" style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', cursor: 'pointer' }}>
+            This is a multi-day event (date-range booking)
+          </label>
+        </div>
+
+        {/* RESPONSIVE DATE & TIME GRID */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', width: '100%' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
-              Event Date
-            </label>
-            <HybridDatePicker
-              value={eventDetails.eventDate}
-              onChange={(date) => setEventDetails({ ...eventDetails, eventDate: date })}
-            />
-          </div>
+          {!eventDetails.isMultiDay ? (
+            <div>
+              <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Event Date
+              </label>
+              <HybridDatePicker
+                value={eventDetails.eventDate}
+                onChange={(date) => setEventDetails({ ...eventDetails, eventDate: date, totalDays: 1 })}
+              />
+            </div>
+          ) : (
+            <>
+              <div>
+                <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  Start Date
+                </label>
+                <HybridDatePicker
+                  value={eventDetails.eventDate}
+                  onChange={(date) => {
+                    const startVal = date;
+                    const endVal = eventDetails.endDate || date;
+                    const diffTime = new Date(endVal).getTime() - new Date(startVal).getTime();
+                    const computedDays = diffTime >= 0 ? Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1 : 1;
+                    setEventDetails({
+                      ...eventDetails,
+                      eventDate: startVal,
+                      totalDays: computedDays
+                    });
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  End Date
+                </label>
+                <HybridDatePicker
+                  value={eventDetails.endDate}
+                  onChange={(date) => {
+                    const startVal = eventDetails.eventDate || date;
+                    const endVal = date;
+                    const diffTime = new Date(endVal).getTime() - new Date(startVal).getTime();
+                    const computedDays = diffTime >= 0 ? Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1 : 1;
+                    setEventDetails({
+                      ...eventDetails,
+                      endDate: endVal,
+                      totalDays: computedDays
+                    });
+                  }}
+                />
+              </div>
+            </>
+          )}
 
           {/* Start Time Field */}
           <div style={{ position: 'relative' }}>
@@ -244,6 +318,12 @@ export const Step1DateVenue = ({
             />
           </div>
         </div>
+
+        {eventDetails.isMultiDay && (
+          <div style={{ padding: '12px 16px', backgroundColor: 'rgba(201, 122, 19, 0.1)', border: '1px dashed #C97A13', borderRadius: '12px', color: '#D97706', fontSize: '14px', fontWeight: '700' }}>
+            🗓️ Total Duration: {eventDetails.totalDays} Consecutive Days ({eventDetails.eventDate || 'Select Start'} to {eventDetails.endDate || 'Select End'})
+          </div>
+        )}
 
         {/* Venue Address */}
         <div>

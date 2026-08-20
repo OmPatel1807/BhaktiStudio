@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { calculateEstimate, createOrder, getMyOrders, getAllOrders, getOrderById, assignWorkersToOrder, updateOrderStatus } from '../controllers/order.controller.js';
+import { calculateEstimate, createOrder, getMyOrders, getAllOrders, getOrderById, assignWorkersToOrder, updateOrderStatus, updateOrder } from '../controllers/order.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/rbac.middleware.js';
 
@@ -10,6 +10,7 @@ router.post('/estimate', calculateEstimate);
 
 // Authenticated Endpoints
 router.post('/', authenticateToken, createOrder);
+router.put('/:id', authenticateToken, updateOrder);
 router.get('/my-orders', authenticateToken, getMyOrders);
 
 // Admin Only Order Management Endpoints

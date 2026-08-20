@@ -302,6 +302,28 @@ export const CustomerDashboard = () => {
                           💳 Pay Online Now
                         </button>
                       )}
+                      {ord.status === 'SUBMITTED' && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/customer/new-order?edit=${ord.id}`)}
+                          style={{
+                            width: '100%',
+                            flex: 1,
+                            backgroundColor: 'transparent',
+                            color: '#F59E0B',
+                            border: '1px dashed #F59E0B',
+                            padding: '10px 14px',
+                            borderRadius: '12px',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            textAlign: 'center',
+                          }}
+                        >
+                          ✏️ Edit Order
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setSelectedOrder(ord)}

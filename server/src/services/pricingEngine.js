@@ -67,11 +67,12 @@ export class PricingEngineService {
     let advanceAmount = quotation && quotation.advanceFee ? round2(quotation.advanceFee) : 0;
 
     if (!quotation || totalAmount === 0) {
+      const daysMultiplier = Number(order?.totalDays) || 1;
       const equipmentSubtotal = round2(
         (order?.orderItems || []).reduce((sum, item) => {
           const rate = Number(item.finalRate || item.estimatedRate || 0);
           const qty = Number(item.quantity || 1);
-          const days = Number(item.days || 1);
+          const days = Number(item.days || daysMultiplier) || 1;
           return sum + rate * qty * days;
         }, 0)
       );
@@ -112,13 +113,15 @@ export class PricingEngineService {
     setupFeeOverride = null,
     transportFeeOverride = null,
     technicianFeeOverride = null,
+    totalDays = 1,
   }) {
     const config = this.getSettings();
     const rules = config.pricingRules;
+    const daysMultiplier = Math.max(1, Number(totalDays) || 1);
 
     const areaSqFt = Number(widthFeet) * Number(heightFeet);
     const effectiveLedRate = ledBaseRate !== null && ledBaseRate !== undefined ? Number(ledBaseRate) : rules.baseLedSqFtRate;
-    const ledBaseCost = round2(areaSqFt * effectiveLedRate);
+    const ledBaseCost = round2(areaSqFt * effectiveLedRate * daysMultiplier);
 
     const customItemsTotal = round2(
       customItems.reduce(
@@ -126,7 +129,7 @@ export class PricingEngineService {
           acc +
           (Number(item.price || item.unitRate || item.baseRate || item.estimatedRate || item.finalRate) || 0) *
             (Number(item.quantity) || 1) *
-            (Number(item.days) || 1),
+            (Number(item.days) || daysMultiplier),
         0
       )
     );

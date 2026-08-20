@@ -18,7 +18,7 @@ async function generateOrderNumber() {
 /**
  * Recalculate price estimation server-side
  */
-async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledHeightFeet, transportDistanceKm }) {
+async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledHeightFeet, transportDistanceKm, totalDays = 1 }) {
   if (!selectedServices || selectedServices.length === 0) {
     return {
       financialSummary: {
@@ -59,7 +59,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
         ledBaseRate = Number(catalogMatch.baseRate);
         const areaSqFt = widthFeet * heightFeet;
         const perSqFtRate = Number(catalogMatch.baseRate);
-        const totalLedRate = areaSqFt > 0 ? (areaSqFt * perSqFtRate) : perSqFtRate;
+        const totalLedRate = areaSqFt > 0 ? (areaSqFt * perSqFtRate * totalDays) : (perSqFtRate * totalDays);
         itemizedList.push({
           serviceName: catalogMatch.name,
           widthFt: widthFeet,
@@ -69,7 +69,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
         });
       } else {
         const qty = Number(item.quantity) || 1;
-        const days = Number(item.days) || 1;
+        const days = Number(item.days || totalDays) || 1;
         const itemCost = Number(item.price || (catalogMatch.baseRate * qty * days));
         customItems.push({
           name: catalogMatch.name,
@@ -87,7 +87,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
       }
     } else if (item.name || item.serviceName) {
       const qty = Number(item.quantity) || 1;
-      const days = Number(item.days) || 1;
+      const days = Number(item.days || totalDays) || 1;
       const w = Number(item.width || item.widthFt || 0);
       const h = Number(item.height || item.heightFt || 0);
       const area = (w > 0 && h > 0) ? (w * h) : 1;
@@ -128,6 +128,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
     transportDistanceKm: Number(transportDistanceKm) || 0,
     customItems,
     ledBaseRate,
+    totalDays,
   });
 
   return {
@@ -164,6 +165,8 @@ export const createOrder = async (req, res) => {
     const {
       eventType,
       eventDate,
+      endDate,
+      totalDays = 1,
       startTime,
       endTime,
       venueAddress,
@@ -190,12 +193,14 @@ export const createOrder = async (req, res) => {
     }
 
     const evtDate = new Date(eventDate);
+    const estDays = Number(totalDays) || 1;
 
     const estimate = await computeServerEstimate({
       selectedServices,
       ledWidthFeet,
       ledHeightFeet,
       transportDistanceKm,
+      totalDays: estDays,
     });
 
     const orderNumber = await generateOrderNumber();
@@ -207,6 +212,8 @@ export const createOrder = async (req, res) => {
         customerId,
         eventType,
         eventDate: evtDate,
+        endDate: endDate ? new Date(endDate) : null,
+        totalDays: estDays,
         startTime,
         endTime,
         venueAddress,
@@ -515,6 +522,142 @@ export const updateOrderStatus = async (req, res) => {
     });
   } catch (error) {
     console.error('Update order status error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * PUT /api/v1/orders/:id
+ * Update customer order in SUBMITTED status, recalculating quotation version
+ */
+export const updateOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const customerId = req.user.userId;
+    const {
+      eventType,
+      eventDate,
+      endDate,
+      totalDays = 1,
+      startTime,
+      endTime,
+      venueAddress,
+      notes,
+      selectedServices = [],
+      ledWidthFeet,
+      ledHeightFeet,
+      transportDistanceKm = 0,
+    } = req.body;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { quotations: { orderBy: { versionNumber: 'desc' } } }
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const isAdmin = req.user.role === 'ADMIN';
+    if (!isAdmin && order.customerId !== customerId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized access to this order' });
+    }
+
+    if (!isAdmin && order.status !== 'SUBMITTED') {
+      return res.status(400).json({ success: false, message: 'Only orders in SUBMITTED status can be edited by customer' });
+    }
+
+    if (!eventType || !eventDate || !startTime || !endTime || !venueAddress) {
+      return res.status(400).json({
+        success: false,
+        message: 'Event type, event date, start/end time, and venue address are required.',
+      });
+    }
+
+    if (!selectedServices || selectedServices.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select at least one service or equipment.',
+      });
+    }
+
+    const evtDate = new Date(eventDate);
+    const estDays = Number(totalDays) || 1;
+
+    const estimate = await computeServerEstimate({
+      selectedServices,
+      ledWidthFeet,
+      ledHeightFeet,
+      transportDistanceKm,
+      totalDays: estDays,
+    });
+
+    await prisma.orderItem.deleteMany({
+      where: { orderId: id }
+    });
+
+    const latestQuotation = order.quotations[0];
+    const nextVersion = (latestQuotation?.versionNumber || 1) + 1;
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: {
+        eventType,
+        eventDate: evtDate,
+        endDate: endDate ? new Date(endDate) : null,
+        totalDays: estDays,
+        startTime,
+        endTime,
+        venueAddress,
+        notes,
+        ledWidthFeet: ledWidthFeet ? Number(ledWidthFeet) : null,
+        ledHeightFeet: ledHeightFeet ? Number(ledHeightFeet) : null,
+        distanceKm: transportDistanceKm ? Number(transportDistanceKm) : null,
+        requiresCustomTransport: Number(transportDistanceKm) > 25,
+        orderItems: {
+          create: estimate.itemizedList.map((item) => ({
+            serviceName: item.serviceName,
+            widthFt: item.widthFt,
+            heightFt: item.heightFt,
+            quantity: item.quantity,
+            estimatedRate: item.estimatedRate,
+            finalRate: item.estimatedRate,
+          })),
+        },
+        quotations: {
+          create: {
+            versionNumber: nextVersion,
+            subtotal: estimate.financialSummary.subtotal,
+            setupFee: estimate.financialSummary.setupFeeTotal,
+            transportFee: estimate.financialSummary.transportFee,
+            technicianFee: estimate.financialSummary.technicianFee || 0,
+            discounts: 0,
+            taxAmount: estimate.financialSummary.taxAmount,
+            totalAmount: estimate.financialSummary.grandTotal,
+            advanceFee: estimate.financialSummary.advanceRequired || 0,
+            isAdminApproved: false,
+          },
+        },
+        auditLogs: {
+          create: {
+            actorId: customerId,
+            action: 'ORDER_UPDATED',
+            details: JSON.stringify({
+              orderNumber: order.orderNumber,
+              grandTotal: estimate.financialSummary.grandTotal,
+              version: nextVersion,
+            }),
+          },
+        },
+      },
+      include: {
+        orderItems: true,
+        quotations: { orderBy: { versionNumber: 'desc' } }
+      }
+    });
+
+    return res.json({ success: true, data: updatedOrder });
+  } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
