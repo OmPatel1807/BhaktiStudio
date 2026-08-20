@@ -51,6 +51,10 @@ export const CustomerDashboard = () => {
     }
   }, [location.search, token]);
 
+  const handleEditOrder = (ord) => {
+    navigate(`/customer/new-order?edit=${ord.id}`);
+  };
+
   return (
     <div
       style={{
@@ -254,28 +258,39 @@ export const CustomerDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Card Footer Row */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '14px',
-                      borderTop: '1px solid var(--border-color)',
-                      paddingTop: '16px',
-                      marginTop: '4px',
-                    }}
-                  >
+                  {/* Card Footer: Quotation Total & Action Buttons */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    borderTop: '1px solid rgba(30, 41, 59, 0.7)',
+                    paddingTop: '18px',
+                    marginTop: 'auto'
+                  }}>
+                    {/* Total Display */}
                     <div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {totalLabel}
+                      <div style={{
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        color: '#94A3B8',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.6px'
+                      }}>
+                        Quotation Total
                       </div>
-                      <div style={{ fontSize: '24px', fontWeight: '900', color: '#C97A13', marginTop: '2px' }}>
-                        {formatCurrency(displayTotal)}
+                      <div style={{
+                        fontSize: '24px',
+                        fontWeight: '900',
+                        color: '#F59E0B',
+                        marginTop: '2px'
+                      }}>
+                        ₹{Number(ord.totalAmount || ord.grandTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2.5 items-center w-full">
+                    {/* Button Group Container */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                      {/* 1. Primary CTA: Pay Online Now (Full Width) */}
                       {ord.paymentStatus !== 'PAID' && (
                         <button
                           type="button"
@@ -285,65 +300,92 @@ export const CustomerDashboard = () => {
                           }}
                           style={{
                             width: '100%',
-                            flex: 1,
                             backgroundColor: '#F59E0B',
-                            color: '#0F172A',
-                            padding: '10px 14px',
+                            color: '#090D16',
+                            padding: '11px 16px',
                             borderRadius: '12px',
                             fontWeight: '800',
                             fontSize: '13px',
                             border: 'none',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
-                            whiteSpace: 'nowrap',
-                            textAlign: 'center',
+                            boxShadow: '0 4px 14px rgba(245, 158, 11, 0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'transform 0.15s ease, background-color 0.15s ease'
                           }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#D97706'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F59E0B'}
                         >
-                          💳 Pay Online Now
+                          <span>💳</span> Pay Online Now
                         </button>
                       )}
-                      {ord.status === 'SUBMITTED' && (
+
+                      {/* 2. Secondary Row: Edit Order & View Details (Side-by-Side 50/50) */}
+                      <div style={{ display: 'grid', gridTemplateColumns: ord.status === 'SUBMITTED' ? '1fr 1fr' : '1fr', gap: '10px', width: '100%' }}>
+                        {ord.status === 'SUBMITTED' && (
+                          <button
+                            type="button"
+                            onClick={() => handleEditOrder(ord)}
+                            style={{
+                              padding: '10px 14px',
+                              backgroundColor: 'rgba(30, 41, 59, 0.5)',
+                              color: '#F8FAFC',
+                              border: '1px solid #334155',
+                              borderRadius: '12px',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(51, 65, 85, 0.8)';
+                              e.currentTarget.style.borderColor = '#F59E0B';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.5)';
+                              e.currentTarget.style.borderColor = '#334155';
+                            }}
+                          >
+                            <span>✏️</span> Edit Order
+                          </button>
+                        )}
+
                         <button
                           type="button"
-                          onClick={() => navigate(`/customer/new-order?edit=${ord.id}`)}
+                          onClick={() => setSelectedOrder(ord)}
                           style={{
-                            width: '100%',
-                            flex: 1,
-                            backgroundColor: 'transparent',
-                            color: '#F59E0B',
-                            border: '1px dashed #F59E0B',
                             padding: '10px 14px',
+                            backgroundColor: '#0F172A',
+                            color: '#E2E8F0',
+                            border: '1px solid #1E293B',
                             borderRadius: '12px',
                             fontWeight: '700',
-                            fontSize: '13px',
+                            fontSize: '12px',
                             cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            textAlign: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#1E293B';
+                            e.currentTarget.style.color = '#FFFFFF';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#0F172A';
+                            e.currentTarget.style.color = '#E2E8F0';
                           }}
                         >
-                          ✏️ Edit Order
+                          <span>👁️</span> View Details
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedOrder(ord)}
-                        style={{
-                          width: '100%',
-                          flex: 1,
-                          backgroundColor: 'var(--bg-input)',
-                          color: 'var(--text-primary)',
-                          border: '1px solid var(--border-color)',
-                          padding: '10px 14px',
-                          borderRadius: '12px',
-                          fontWeight: '700',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          textAlign: 'center',
-                        }}
-                      >
-                        View Details
-                      </button>
+                      </div>
                     </div>
                   </div>
                 </div>
