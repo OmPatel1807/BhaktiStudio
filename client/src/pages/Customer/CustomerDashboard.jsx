@@ -209,9 +209,13 @@ export const CustomerDashboard = () => {
           >
             {orders && orders.length > 0 ? (
               orders.map((ord) => {
-                // Safe total and label resolution
-                const rawTotal = ord.quotations?.[0]?.grandTotal ?? ord.totalAmount ?? ord.grandTotal ?? 0;
-                const displayTotal = Number(rawTotal);
+                // Safe total and label resolution using the imported helper
+                const resolved = typeof resolveOrderDisplayTotal === 'function'
+                  ? resolveOrderDisplayTotal(ord)
+                  : null;
+
+                const displayTotal = Number(resolved?.displayTotal ?? ord.quotations?.[0]?.totalAmount ?? ord.quotations?.[0]?.grandTotal ?? ord.totalAmount ?? ord.grandTotal ?? 0);
+                const totalLabel = resolved?.label ?? 'QUOTATION TOTAL';
 
                 return (
                   <div
@@ -287,7 +291,7 @@ export const CustomerDashboard = () => {
                     >
                       <div>
                         <div style={{ fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          QUOTATION TOTAL
+                          {totalLabel}
                         </div>
                         <div style={{ fontSize: '24px', fontWeight: '900', color: '#F59E0B', marginTop: '2px' }}>
                           ₹{displayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
