@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { IndianRupee, Clock3, Layers, Zap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 import {
@@ -158,9 +157,7 @@ export const AnalyticsDashboard = () => {
             gap: '16px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
           }}>
-            <div style={{ padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', color: '#F59E0B' }}>
-              <IndianRupee size={24} />
-            </div>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>💰</div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Revenue Collected</div>
               <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{formatCurrency(overview?.totalRevenueCollected || 0)}</div>
@@ -179,9 +176,7 @@ export const AnalyticsDashboard = () => {
             gap: '16px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
           }}>
-            <div style={{ padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', color: '#EF4444' }}>
-              <Clock3 size={24} />
-            </div>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>⏳</div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pending Receivables</div>
               <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{formatCurrency(overview?.pendingReceivables || 0)}</div>
@@ -200,9 +195,7 @@ export const AnalyticsDashboard = () => {
             gap: '16px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
           }}>
-            <div style={{ padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', color: '#3B82F6' }}>
-              <Layers size={24} />
-            </div>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>📜</div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders Count</div>
               <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{overview?.totalOrdersCount || 0}</div>
@@ -221,9 +214,7 @@ export const AnalyticsDashboard = () => {
             gap: '16px',
             boxShadow: '0 4px 20px rgba(0,0,0,0.25)'
           }}>
-            <div style={{ padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', color: '#A855F7' }}>
-              <Zap size={24} />
-            </div>
+            <div style={{ fontSize: '28px', padding: '12px', borderRadius: '16px', backgroundColor: 'rgba(168, 85, 247, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px' }}>⚡</div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Executions</div>
               <div style={{ fontSize: '22px', fontWeight: '900', color: '#FFFFFF', marginTop: '2px' }}>{overview?.activeExecutionsCount || 0}</div>

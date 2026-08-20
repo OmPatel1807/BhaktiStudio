@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, CreditCard, Edit3, ArrowUpRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
@@ -265,12 +264,12 @@ export const CustomerDashboard = () => {
                       {/* Event Location & Date */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: '#94A3B8' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <MapPin className="text-amber-400 shrink-0" size={14} />
+                          <span>📍</span>
                           <strong style={{ color: '#64748B' }}>Venue:</strong>
                           <span style={{ color: '#CBD5E1' }}>{ord.venueAddress || 'Surat'}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Calendar className="text-amber-400 shrink-0" size={14} />
+                          <span>🗓️</span>
                           <strong style={{ color: '#64748B' }}>Event Date:</strong>
                           <span style={{ color: '#CBD5E1' }}>
                             {typeof formatDateTime === 'function' ? formatDateTime(ord.eventDate) : (ord.eventDate || 'TBD')}
@@ -327,7 +326,7 @@ export const CustomerDashboard = () => {
                               gap: '6px'
                             }}
                           >
-                            <CreditCard size={15} /> Pay Online Now
+                            <span>💳</span> Pay Online Now
                           </button>
                         )}
 
@@ -358,7 +357,7 @@ export const CustomerDashboard = () => {
                                 gap: '5px'
                               }}
                             >
-                              <Edit3 className="text-slate-400" size={13} /> Edit Order
+                              <span>✏️</span> Edit Order
                             </button>
                           )}
 
@@ -380,7 +379,7 @@ export const CustomerDashboard = () => {
                               gap: '5px'
                             }}
                           >
-                            <span>View Details</span> <ArrowUpRight className="text-slate-400" size={13} />
+                            <span>👁️</span> View Details
                           </button>
                         </div>
                       </div>
