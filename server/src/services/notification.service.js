@@ -150,6 +150,22 @@ export class NotificationService {
             });
             break;
 
+          case 'WORKER_APPROVED':
+            // Notify Worker
+            await InAppProvider.send({
+              userId: payload.workerUserId,
+              title: '👷 Crew Account Approved',
+              message: 'Your Bhakti Studio Crew account has been approved! You can now log in.',
+              actionUrl: '/worker/dashboard',
+              type: 'WORKER_APPROVED',
+            });
+            await EmailProvider.send({
+              toEmail: payload.workerEmail,
+              subject: '[Bhakti Studio] Crew Account Approved',
+              htmlContent: `<h2>Congratulations!</h2><p>Your Bhakti Studio Crew account has been approved! You can now log in.</p>`,
+            });
+            break;
+
           default:
             console.log(`[NotificationService]: Unhandled event type '${eventType}'`);
         }

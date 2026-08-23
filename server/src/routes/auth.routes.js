@@ -42,6 +42,7 @@ router.post('/google', async (req, res, next) => {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
       success: false,
+      code: error.code,
       message: error.message,
     });
   }
@@ -62,6 +63,7 @@ router.get('/me', authenticateToken, async (req, res, next) => {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
       success: false,
+      code: error.code,
       message: error.message,
     });
   }

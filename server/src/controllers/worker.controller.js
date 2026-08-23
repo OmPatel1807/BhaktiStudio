@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { WorkerAssignmentService } from '../services/workerAssignmentService.js';
+import { NotificationService } from '../services/notification.service.js';
 
 const prisma = new PrismaClient();
 
@@ -310,6 +311,7 @@ export const applyWorker = async (req, res) => {
           phone: phone || user.phone,
           role: 'WORKER',
           isActive: false, // Pending admin approval
+          status: 'PENDING',
           avatarUrl: avatarUrl || user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
         },
       });
@@ -321,6 +323,7 @@ export const applyWorker = async (req, res) => {
           phone,
           role: 'WORKER',
           isActive: false, // Pending admin approval
+          status: 'PENDING',
           avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
         },
       });
@@ -331,11 +334,13 @@ export const applyWorker = async (req, res) => {
       update: {
         specialization,
         experienceYrs: Number(experienceYrs),
+        status: 'PENDING',
       },
       create: {
         userId: user.id,
         specialization,
         experienceYrs: Number(experienceYrs),
+        status: 'PENDING',
       },
       include: { user: true },
     });
@@ -358,11 +363,11 @@ export const getPendingWorkers = async (req, res) => {
   try {
     const pendingWorkers = await prisma.workerProfile.findMany({
       where: {
-        user: { isActive: false },
+        status: 'PENDING',
       },
       include: {
         user: {
-          select: { id: true, name: true, email: true, phone: true, avatarUrl: true, isActive: true, createdAt: true },
+          select: { id: true, name: true, email: true, phone: true, avatarUrl: true, isActive: true, status: true, createdAt: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -400,7 +405,27 @@ export const approveWorker = async (req, res) => {
 
     await prisma.user.update({
       where: { id: profile.userId },
-      data: { isActive: true },
+      data: {
+        isActive: true,
+        status: 'APPROVED',
+      },
+    });
+
+    await prisma.workerProfile.update({
+      where: { id: profile.id },
+      data: {
+        status: 'APPROVED',
+      },
+    });
+
+    // Notify Worker
+    await NotificationService.dispatch({
+      eventType: 'WORKER_APPROVED',
+      payload: {
+        workerUserId: profile.userId,
+        workerEmail: profile.user.email,
+        workerName: profile.user.name,
+      },
     });
 
     return res.json({
@@ -436,13 +461,24 @@ export const rejectWorker = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Worker profile not found.' });
     }
 
-    // Delete pending application record
-    await prisma.workerProfile.delete({ where: { id: profile.id } });
-    await prisma.user.delete({ where: { id: profile.userId } });
+    await prisma.user.update({
+      where: { id: profile.userId },
+      data: {
+        isActive: false,
+        status: 'REJECTED',
+      },
+    });
+
+    await prisma.workerProfile.update({
+      where: { id: profile.id },
+      data: {
+        status: 'REJECTED',
+      },
+    });
 
     return res.json({
       success: true,
-      message: 'Worker application rejected and record removed.',
+      message: 'Worker application rejected successfully.',
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });

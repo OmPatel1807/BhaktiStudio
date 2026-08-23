@@ -160,6 +160,27 @@ export class AuthService {
         error.statusCode = 403;
         throw error;
       }
+
+      // Check if worker profile exists and is approved
+      const workerProfile = await prisma.workerProfile.findUnique({
+        where: { userId: user.id }
+      });
+
+      const workerStatus = workerProfile?.status || user.status || 'PENDING';
+
+      if (workerStatus === 'PENDING') {
+        const error = new Error('Your crew application is currently pending admin review. You will be able to log in once Bhakti Studio approves your account.');
+        error.statusCode = 403;
+        error.code = 'WORKER_APPLICATION_PENDING';
+        throw error;
+      }
+
+      if (workerStatus === 'REJECTED') {
+        const error = new Error('Your crew application was not approved. Please contact studio administration for details.');
+        error.statusCode = 403;
+        error.code = 'WORKER_APPLICATION_REJECTED';
+        throw error;
+      }
     } else {
       // CUSTOMER flow: Auto-create as CUSTOMER if not registered
       if (!user) {
