@@ -70,8 +70,22 @@ async function run() {
   } catch (error) {
     assert.strictEqual(error.statusCode, 403, `Expected status 403, got ${error.statusCode}`);
     assert.strictEqual(error.code, 'WORKER_APPLICATION_PENDING', `Expected code WORKER_APPLICATION_PENDING, got ${error.code}`);
-    console.log("✅ Step 2 Passed: Login blocked with WORKER_APPLICATION_PENDING.");
+    console.log("   -> Login blocked when requesting WORKER role.");
   }
+
+  try {
+    await AuthService.authenticateUserWithGoogle({
+      email: testEmail,
+      name,
+      requestedRole: 'CUSTOMER',
+    });
+    assert.fail("Login should have failed for PENDING worker requesting CUSTOMER role");
+  } catch (error) {
+    assert.strictEqual(error.statusCode, 403, `Expected status 403, got ${error.statusCode}`);
+    assert.strictEqual(error.code, 'WORKER_APPLICATION_PENDING', `Expected code WORKER_APPLICATION_PENDING, got ${error.code}`);
+    console.log("   -> Login blocked when requesting CUSTOMER role.");
+  }
+  console.log("✅ Step 2 Passed: Login blocked with WORKER_APPLICATION_PENDING for both requested roles.");
 
   console.log("\nStep 3: Rejecting worker application...");
   const reqReject = {
@@ -110,8 +124,22 @@ async function run() {
   } catch (error) {
     assert.strictEqual(error.statusCode, 403, `Expected status 403, got ${error.statusCode}`);
     assert.strictEqual(error.code, 'WORKER_APPLICATION_REJECTED', `Expected code WORKER_APPLICATION_REJECTED, got ${error.code}`);
-    console.log("✅ Step 4 Passed: Login blocked with WORKER_APPLICATION_REJECTED.");
+    console.log("   -> Login blocked when requesting WORKER role.");
   }
+
+  try {
+    await AuthService.authenticateUserWithGoogle({
+      email: testEmail,
+      name,
+      requestedRole: 'CUSTOMER',
+    });
+    assert.fail("Login should have failed for REJECTED worker requesting CUSTOMER role");
+  } catch (error) {
+    assert.strictEqual(error.statusCode, 403, `Expected status 403, got ${error.statusCode}`);
+    assert.strictEqual(error.code, 'WORKER_APPLICATION_REJECTED', `Expected code WORKER_APPLICATION_REJECTED, got ${error.code}`);
+    console.log("   -> Login blocked when requesting CUSTOMER role.");
+  }
+  console.log("✅ Step 4 Passed: Login blocked with WORKER_APPLICATION_REJECTED for both requested roles.");
 
   console.log("\nStep 5: Approving worker application...");
   const reqApprove = {
@@ -151,6 +179,7 @@ async function run() {
   console.log("✅ Step 6 Passed: Login succeeds and returns JWT payload.");
 
   console.log("\nStep 7: Cleaning up test records...");
+  await new Promise((resolve) => setTimeout(resolve, 600));
   await prisma.auditLog.deleteMany({ where: { actorId: approvedUser.id } });
   await prisma.workerProfile.delete({ where: { id: profile.id } });
   await prisma.user.delete({ where: { id: approvedUser.id } });

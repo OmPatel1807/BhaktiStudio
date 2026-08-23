@@ -129,6 +129,29 @@ export class AuthService {
       where: { email: normalizedEmail },
     });
 
+    // If the user already exists and has the WORKER role, check status regardless of requested role
+    if (user && user.role === 'WORKER') {
+      const workerProfile = await prisma.workerProfile.findUnique({
+        where: { userId: user.id }
+      });
+
+      const workerStatus = workerProfile?.status || user.status || 'PENDING';
+
+      if (workerStatus === 'PENDING') {
+        const error = new Error('Your crew application is currently pending admin review. You will be able to log in once Bhakti Studio approves your account.');
+        error.statusCode = 403;
+        error.code = 'WORKER_APPLICATION_PENDING';
+        throw error;
+      }
+
+      if (workerStatus === 'REJECTED') {
+        const error = new Error('Your crew application was not approved. Please contact studio administration for details.');
+        error.statusCode = 403;
+        error.code = 'WORKER_APPLICATION_REJECTED';
+        throw error;
+      }
+    }
+
     // Auto-promote or auto-create designated Admin emails
     if (isDesignatedAdmin) {
       if (!user) {
@@ -158,27 +181,6 @@ export class AuthService {
       if (!user || user.role !== 'WORKER') {
         const error = new Error('Account not authorized as Worker. Contact Admin.');
         error.statusCode = 403;
-        throw error;
-      }
-
-      // Check if worker profile exists and is approved
-      const workerProfile = await prisma.workerProfile.findUnique({
-        where: { userId: user.id }
-      });
-
-      const workerStatus = workerProfile?.status || user.status || 'PENDING';
-
-      if (workerStatus === 'PENDING') {
-        const error = new Error('Your crew application is currently pending admin review. You will be able to log in once Bhakti Studio approves your account.');
-        error.statusCode = 403;
-        error.code = 'WORKER_APPLICATION_PENDING';
-        throw error;
-      }
-
-      if (workerStatus === 'REJECTED') {
-        const error = new Error('Your crew application was not approved. Please contact studio administration for details.');
-        error.statusCode = 403;
-        error.code = 'WORKER_APPLICATION_REJECTED';
         throw error;
       }
     } else {
