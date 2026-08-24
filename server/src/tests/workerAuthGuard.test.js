@@ -73,19 +73,16 @@ async function run() {
     console.log("   -> Login blocked when requesting WORKER role.");
   }
 
-  try {
-    await AuthService.authenticateUserWithGoogle({
-      email: testEmail,
-      name,
-      requestedRole: 'CUSTOMER',
-    });
-    assert.fail("Login should have failed for PENDING worker requesting CUSTOMER role");
-  } catch (error) {
-    assert.strictEqual(error.statusCode, 403, `Expected status 403, got ${error.statusCode}`);
-    assert.strictEqual(error.code, 'WORKER_APPLICATION_PENDING', `Expected code WORKER_APPLICATION_PENDING, got ${error.code}`);
-    console.log("   -> Login blocked when requesting CUSTOMER role.");
-  }
-  console.log("✅ Step 2 Passed: Login blocked with WORKER_APPLICATION_PENDING for both requested roles.");
+  // Pending worker login as CUSTOMER should succeed
+  const customerLoginPending = await AuthService.authenticateUserWithGoogle({
+    email: testEmail,
+    name,
+    requestedRole: 'CUSTOMER',
+  });
+  assert.ok(customerLoginPending.token, "Login should succeed when requesting CUSTOMER role");
+  assert.strictEqual(customerLoginPending.user.role, 'CUSTOMER', "Session role should be CUSTOMER");
+  console.log("   -> Login allowed and session role is CUSTOMER when requesting CUSTOMER role.");
+  console.log("✅ Step 2 Passed: Login blocked with WORKER_APPLICATION_PENDING only when requesting WORKER role.");
 
   console.log("\nStep 3: Rejecting worker application...");
   const reqReject = {
@@ -127,19 +124,16 @@ async function run() {
     console.log("   -> Login blocked when requesting WORKER role.");
   }
 
-  try {
-    await AuthService.authenticateUserWithGoogle({
-      email: testEmail,
-      name,
-      requestedRole: 'CUSTOMER',
-    });
-    assert.fail("Login should have failed for REJECTED worker requesting CUSTOMER role");
-  } catch (error) {
-    assert.strictEqual(error.statusCode, 403, `Expected status 403, got ${error.statusCode}`);
-    assert.strictEqual(error.code, 'WORKER_APPLICATION_REJECTED', `Expected code WORKER_APPLICATION_REJECTED, got ${error.code}`);
-    console.log("   -> Login blocked when requesting CUSTOMER role.");
-  }
-  console.log("✅ Step 4 Passed: Login blocked with WORKER_APPLICATION_REJECTED for both requested roles.");
+  // Rejected worker login as CUSTOMER should succeed
+  const customerLoginRejected = await AuthService.authenticateUserWithGoogle({
+    email: testEmail,
+    name,
+    requestedRole: 'CUSTOMER',
+  });
+  assert.ok(customerLoginRejected.token, "Login should succeed when requesting CUSTOMER role");
+  assert.strictEqual(customerLoginRejected.user.role, 'CUSTOMER', "Session role should be CUSTOMER");
+  console.log("   -> Login allowed and session role is CUSTOMER when requesting CUSTOMER role.");
+  console.log("✅ Step 4 Passed: Login blocked with WORKER_APPLICATION_REJECTED only when requesting WORKER role.");
 
   console.log("\nStep 5: Approving worker application...");
   const reqApprove = {
