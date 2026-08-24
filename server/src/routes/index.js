@@ -13,6 +13,7 @@ import paymentRoutes from './payment.routes.js';
 import notificationRoutes from './notification.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import auditRoutes from './audit.routes.js';
+import adminRoutes from './admin.routes.js';
 
 import {
   globalRateLimiter,
@@ -68,6 +69,7 @@ router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/audit-logs', auditRoutes);
+router.use('/admin', adminRoutes);
 
 // Legacy Pricing Engine Estimation Endpoint
 router.post('/pricing/calculate-estimate', (req, res) => {

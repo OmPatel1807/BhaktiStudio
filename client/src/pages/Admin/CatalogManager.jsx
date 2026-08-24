@@ -43,6 +43,8 @@ export const CatalogManager = () => {
   });
   const [loadingSettings, setLoadingSettings] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [targetAdminEmail, setTargetAdminEmail] = useState('');
+  const [promotingAdmin, setPromotingAdmin] = useState(false);
 
   // Global Notification Toast
   const [toast, setToast] = useState(null);
@@ -316,6 +318,36 @@ export const CatalogManager = () => {
       showToast('Failed to save settings', 'error');
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handlePromoteToAdmin = async (e) => {
+    e.preventDefault();
+    if (!targetAdminEmail.trim()) {
+      showToast('Please enter a target email address', 'error');
+      return;
+    }
+    setPromotingAdmin(true);
+    try {
+      const res = await fetch('/api/v1/admin/users/promote-to-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email: targetAdminEmail }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        showToast(json.message);
+        setTargetAdminEmail('');
+      } else {
+        showToast(json.message, 'error');
+      }
+    } catch (err) {
+      showToast('Failed to delegate admin access', 'error');
+    } finally {
+      setPromotingAdmin(false);
     }
   };
 
@@ -889,6 +921,58 @@ export const CatalogManager = () => {
                 {savingSettings ? 'Saving Settings...' : 'Save Pricing Engine Defaults'}
               </button>
             </form>
+
+            {/* Co-Admin Access Delegation Card */}
+            <div style={{
+              backgroundColor: '#1E293B',
+              border: '1px solid rgba(245, 158, 11, 0.2)',
+              borderRadius: '16px',
+              padding: '24px',
+              marginTop: '32px'
+            }}>
+              <h3 style={{ color: '#F59E0B', fontSize: '16px', fontWeight: '800', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                👑 Co-Admin Access Delegation
+              </h3>
+              <p style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '16px', lineHeight: '1.5' }}>
+                Promote any registered user or friend to have identical full Admin dashboard permissions.
+              </p>
+              <form onSubmit={handlePromoteToAdmin} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <input
+                  type="email"
+                  placeholder="friend.email@example.com"
+                  required
+                  value={targetAdminEmail}
+                  onChange={(e) => setTargetAdminEmail(e.target.value)}
+                  style={{
+                    flex: 1,
+                    minWidth: '240px',
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '12px 14px',
+                    color: '#FFFFFF',
+                    fontSize: '14px'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={promotingAdmin}
+                  style={{
+                    backgroundColor: '#F59E0B',
+                    color: '#090D16',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '12px 20px',
+                    fontWeight: '800',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {promotingAdmin ? 'Delegating...' : 'Grant Admin Access'}
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </div>
