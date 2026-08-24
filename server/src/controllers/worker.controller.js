@@ -406,6 +406,7 @@ export const approveWorker = async (req, res) => {
     await prisma.user.update({
       where: { id: profile.userId },
       data: {
+        role: 'WORKER',
         isActive: true,
         status: 'APPROVED',
       },
@@ -464,7 +465,8 @@ export const rejectWorker = async (req, res) => {
     await prisma.user.update({
       where: { id: profile.userId },
       data: {
-        isActive: false,
+        role: 'CUSTOMER',
+        isActive: true,
         status: 'REJECTED',
       },
     });

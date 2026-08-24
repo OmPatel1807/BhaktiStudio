@@ -107,8 +107,9 @@ async function run() {
 
   assert.strictEqual(rejectedUser.status, 'REJECTED', "User status must update to REJECTED");
   assert.strictEqual(rejectedProfile.status, 'REJECTED', "WorkerProfile status must update to REJECTED");
-  assert.strictEqual(rejectedUser.isActive, false, "User must remain inactive on rejection");
-  console.log("✅ Step 3 Passed: Rejection successfully marked user and worker profile status as REJECTED.");
+  assert.strictEqual(rejectedUser.role, 'CUSTOMER', "User role must reset to CUSTOMER");
+  assert.strictEqual(rejectedUser.isActive, true, "User must be active to allow customer portal logins");
+  console.log("✅ Step 3 Passed: Rejection successfully reset user to CUSTOMER role, isActive is true.");
 
   console.log("\nStep 4: Simulating login attempt for the REJECTED worker...");
   try {
