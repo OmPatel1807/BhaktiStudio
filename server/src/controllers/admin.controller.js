@@ -51,7 +51,26 @@ export const promoteUserToAdmin = async (req, res) => {
 export const updateOrderQuotation = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { items = [], discount = 0, discountType = 'FIXED', setupFee = 0, transportFee = 0, technicianFee = 0, gstRate = 18.0, action, notes } = req.body;
+    const {
+      items = [],
+      discount,
+      discounts,
+      discountType = 'FLAT',
+      setupCost,
+      setupFee,
+      logisticsCost,
+      transportFee,
+      techSupportCost,
+      technicianFee,
+      gstRate = 18.0,
+      action,
+      notes
+    } = req.body;
+
+    const finalSetupFee = Number(setupCost !== undefined ? setupCost : (setupFee !== undefined ? setupFee : 0));
+    const finalTransportFee = Number(logisticsCost !== undefined ? logisticsCost : (transportFee !== undefined ? transportFee : 0));
+    const finalTechnicianFee = Number(techSupportCost !== undefined ? techSupportCost : (technicianFee !== undefined ? technicianFee : 0));
+    const finalDiscount = Number(discount !== undefined ? discount : (discounts !== undefined ? discounts : 0));
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -111,17 +130,15 @@ export const updateOrderQuotation = async (req, res) => {
     }
     itemsSubtotal = round2(itemsSubtotal);
 
-    const grossSubtotal = round2(
-      itemsSubtotal +
-      Number(setupFee) +
-      Number(transportFee) +
-      Number(technicianFee)
-    );
+    const overheadsTotal = finalSetupFee + finalTransportFee + finalTechnicianFee;
+    const grossSubtotal = round2(itemsSubtotal + overheadsTotal);
 
-    const discountVal = Number(discount);
-    const discountAmount = discountType === 'PERCENT'
-      ? round2(itemsSubtotal * (discountVal / 100))
-      : round2(discountVal);
+    let discountAmount = finalDiscount;
+    if (discountType === 'PERCENTAGE' || discountType === 'PERCENT') {
+      discountAmount = round2((grossSubtotal * finalDiscount) / 100);
+    } else {
+      discountAmount = round2(finalDiscount);
+    }
 
     const taxableAmount = Math.max(0, round2(grossSubtotal - discountAmount));
     const taxAmount = round2((taxableAmount * Number(gstRate)) / 100);
@@ -138,9 +155,9 @@ export const updateOrderQuotation = async (req, res) => {
         orderId,
         versionNumber: nextVersionNumber,
         subtotal: grossSubtotal,
-        setupFee: round2(Number(setupFee)),
-        transportFee: round2(Number(transportFee)),
-        technicianFee: round2(Number(technicianFee)),
+        setupFee: round2(finalSetupFee),
+        transportFee: round2(finalTransportFee),
+        technicianFee: round2(finalTechnicianFee),
         discounts: discountAmount,
         taxAmount,
         totalAmount: grandTotal,

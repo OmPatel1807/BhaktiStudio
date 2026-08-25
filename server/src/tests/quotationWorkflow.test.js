@@ -108,9 +108,9 @@ async function run() {
     params: { orderId: order.id },
     body: {
       action: 'ACCEPT_AND_QUOTE',
-      setupFee: 3000,
-      transportFee: 1500,
-      technicianFee: 2000,
+      setupCost: 3000,
+      logisticsCost: 1500,
+      techSupportCost: 2000,
       discount: 1000,
       discountType: 'FIXED',
       gstRate: 18,

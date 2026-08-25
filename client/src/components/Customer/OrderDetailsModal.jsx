@@ -141,14 +141,20 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
             </div>
             {Number(latestQuotation.setupFee || 0) > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Estimated Setup Charge:</span>
-                <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(latestQuotation.setupFee)}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Setup & Rigging Charges:</span>
+                <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.setupFee)}</span>
               </div>
             )}
             {Number(latestQuotation.transportFee || 0) > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Transportation Charge:</span>
-                <span style={{ color: 'var(--text-primary)' }}>{formatCurrency(latestQuotation.transportFee)}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Transport & Logistics:</span>
+                <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.transportFee)}</span>
+              </div>
+            )}
+            {Number(latestQuotation.technicianFee || 0) > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>On-Site Technician Support:</span>
+                <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.technicianFee)}</span>
               </div>
             )}
             {Number(latestQuotation.discounts || 0) > 0 && (

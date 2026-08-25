@@ -19,14 +19,25 @@ export const ReviewQuotationModal = ({ order, isOpen, onClose, onSuccess }) => {
     if (order) {
       const rawItems = order.orderItems || order.items || order.services || [];
       setItems(
-        rawItems.map((item) => ({
-          id: item.id,
-          name: item.serviceName || item.name || item.service?.name || 'Service Item',
-          estimatedRate: Number(item.estimatedRate || item.baseRate || 0),
-          finalRate: Number(item.finalRate || item.estimatedRate || item.baseRate || 0),
-          quantity: Number(item.quantity) || 1,
-          days: Number(item.days || 1),
-        }))
+        rawItems.map((item) => {
+          const isSqFt = item.unit === 'sqft' || item.serviceName?.toLowerCase().includes('led') || item.name?.toLowerCase().includes('led');
+          const width = Number(item.widthFt || item.ledWidth || item.width || 0);
+          const height = Number(item.heightFt || item.ledHeight || item.height || 0);
+          const calculatedQty = isSqFt && width > 0 && height > 0
+            ? width * height
+            : (Number(item.quantity) || 1);
+
+          return {
+            id: item.id,
+            name: item.serviceName || item.name || item.service?.name || 'Service Item',
+            isSqFt,
+            unitLabel: isSqFt ? 'sq ft' : 'units',
+            estimatedRate: Number(item.estimatedRate || item.baseRate || 0),
+            finalRate: Number(item.finalRate || item.estimatedRate || item.baseRate || 0),
+            quantity: calculatedQty,
+            days: Number(order.totalDays || item.days || 1),
+          };
+        })
       );
 
       // Populate distance-based transport if applicable
@@ -78,11 +89,20 @@ export const ReviewQuotationModal = ({ order, isOpen, onClose, onSuccess }) => {
         },
         body: JSON.stringify({
           action: actionType, // 'ACCEPT_AND_QUOTE' | 'REJECT'
-          items: items.map(i => ({ id: i.id, finalRate: i.finalRate, quantity: i.quantity })),
+          items: items.map(i => ({
+            id: i.id,
+            rate: i.finalRate,
+            finalRate: i.finalRate,
+            quantity: i.quantity
+          })),
           discount: Number(discount),
+          discounts: Number(discount),
           discountType,
+          setupCost: Number(setupFee),
           setupFee: Number(setupFee),
+          logisticsCost: Number(transportFee),
           transportFee: Number(transportFee),
+          techSupportCost: Number(technicianFee),
           technicianFee: Number(technicianFee),
           gstRate: Number(gstRate),
           notes,
@@ -210,13 +230,15 @@ export const ReviewQuotationModal = ({ order, isOpen, onClose, onSuccess }) => {
                   }}
                 >
                   <div style={{ color: '#FFFFFF', fontWeight: '700', fontSize: '14px' }}>
-                    {item.name}
+                    {item.name} {item.isSqFt ? `(${item.quantity} sq ft @ ₹${item.finalRate}/sq ft)` : ''}
                     <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
                       Base Est: ₹{item.estimatedRate.toLocaleString('en-IN')}
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px', fontWeight: '700' }}>QUANTITY</label>
+                    <label style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px', fontWeight: '700' }}>
+                      {item.isSqFt ? 'SQ FT' : 'QUANTITY'}
+                    </label>
                     <input
                       type="number"
                       min="1"
