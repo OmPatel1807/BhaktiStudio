@@ -166,6 +166,26 @@ export class NotificationService {
             });
             break;
 
+          case 'QUOTATION_ISSUED':
+            await InAppProvider.send({
+              userId: payload.customerId,
+              title: 'Quotation Ready',
+              message: `Your official quotation for ${payload.eventType} is ready for review!`,
+              actionUrl: `/customer/dashboard`,
+              type: 'QUOTATION_ISSUED',
+            });
+            break;
+
+          case 'ORDER_REJECTED':
+            await InAppProvider.send({
+              userId: payload.customerId,
+              title: 'Order Update',
+              message: `Your booking request #${payload.orderNumber} could not be accepted.`,
+              actionUrl: `/customer/dashboard`,
+              type: 'ORDER_REJECTED',
+            });
+            break;
+
           default:
             console.log(`[NotificationService]: Unhandled event type '${eventType}'`);
         }

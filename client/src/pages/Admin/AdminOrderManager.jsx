@@ -6,6 +6,7 @@ import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { OrderDetailsModal } from '../../components/Customer/OrderDetailsModal';
 import { OrderQrModal } from '../../components/Admin/OrderQrModal';
 import { AssignCrewModal } from '../../components/Admin/AssignCrewModal';
+import { ReviewQuotationModal } from '../../components/Admin/ReviewQuotationModal';
 
 export const AdminOrderManager = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ export const AdminOrderManager = () => {
   const [selectedDetailsOrder, setSelectedDetailsOrder] = useState(null);
   const [selectedQrOrder, setSelectedQrOrder] = useState(null);
   const [selectedAssignCrewOrder, setSelectedAssignCrewOrder] = useState(null);
+  const [selectedQuoteOrder, setSelectedQuoteOrder] = useState(null);
   const [openActionDropdownId, setOpenActionDropdownId] = useState(null);
 
   useEffect(() => {
@@ -366,7 +368,7 @@ export const AdminOrderManager = () => {
 
                         <button
                           type="button"
-                          onClick={() => navigate(`/admin/quotation/${ord.id}`)}
+                          onClick={() => setSelectedQuoteOrder(ord)}
                           style={{
                             backgroundColor: 'rgba(201, 122, 19, 0.15)',
                             color: '#C97A13',
@@ -523,7 +525,7 @@ export const AdminOrderManager = () => {
                           {/* 2. Quotation Link */}
                           <button
                             type="button"
-                            onClick={() => navigate(`/admin/quotation/${ord.id}`)}
+                            onClick={() => setSelectedQuoteOrder(ord)}
                             style={{
                               backgroundColor: 'rgba(201, 122, 19, 0.15)',
                               color: '#C97A13',
@@ -748,6 +750,18 @@ export const AdminOrderManager = () => {
         order={selectedQrOrder}
         isOpen={Boolean(selectedQrOrder)}
         onClose={() => setSelectedQrOrder(null)}
+      />
+
+      {/* Review & Price Quotation Modal */}
+      <ReviewQuotationModal
+        order={selectedQuoteOrder}
+        isOpen={Boolean(selectedQuoteOrder)}
+        onClose={() => setSelectedQuoteOrder(null)}
+        onSuccess={(msg) => {
+          setToastMsg(msg);
+          fetchAllOrders();
+          setTimeout(() => setToastMsg(null), 3500);
+        }}
       />
 
       {/* Quick Crew Assignment Modal */}

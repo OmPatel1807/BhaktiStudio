@@ -5,6 +5,7 @@ import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { resolveOrderDisplayTotal } from '../../utils/quotationMath';
 import { OrderDetailsModal } from '../../components/Customer/OrderDetailsModal';
 import { PaymentModal } from '../../components/Customer/PaymentModal';
+import { generateQuotationPdf } from '../../utils/generateQuotationPdf';
 
 export const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -300,7 +301,36 @@ export const CustomerDashboard = () => {
 
                       {/* Button Actions Group */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                        {ord.paymentStatus !== 'PAID' && (
+                        {/* Download Quotation PDF button when status is QUOTATION_SENT */}
+                        {ord.status === 'QUOTATION_SENT' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const latestQuotation = ord.quotations?.[0];
+                              generateQuotationPdf(ord, latestQuotation);
+                            }}
+                            style={{
+                              width: '100%',
+                              backgroundColor: 'rgba(30, 41, 59, 0.7)',
+                              color: '#F8FAFC',
+                              padding: '11px 16px',
+                              borderRadius: '12px',
+                              border: '1px solid #334155',
+                              fontWeight: '800',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            <span>📄</span> Download Quotation PDF
+                          </button>
+                        )}
+
+                        {ord.paymentStatus !== 'PAID' && ord.status === 'QUOTATION_SENT' && (
                           <button
                             type="button"
                             onClick={() => {
@@ -323,7 +353,8 @@ export const CustomerDashboard = () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '6px'
+                              gap: '6px',
+                              boxSizing: 'border-box'
                             }}
                           >
                             <span>💳</span> Pay Online Now
