@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { promoteUserToAdmin, updateOrderQuotation } from '../controllers/admin.controller.js';
+import { promoteUserToAdmin, updateOrderQuotation, createWorkerPayout, getWorkerPayoutsSummary } from '../controllers/admin.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/rbac.middleware.js';
 
@@ -10,5 +10,9 @@ router.use(authenticateToken, authorizeRoles('ADMIN'));
 
 router.post('/users/promote-to-admin', promoteUserToAdmin);
 router.post('/orders/:orderId/quotation', updateOrderQuotation);
+
+// Worker Payroll Settlements
+router.get('/workers/payouts-summary', getWorkerPayoutsSummary);
+router.post('/workers/:workerId/payout', createWorkerPayout);
 
 export default router;

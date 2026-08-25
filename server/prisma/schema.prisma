@@ -74,6 +74,7 @@ model User {
   uploadedPhotos   EventPhoto[]     @relation("PhotoUploader")
   auditLogs        AuditLog[]       @relation("AuditActor")
   executionMedia   ExecutionMedia[]
+  payouts          WorkerPayout[]
 }
 
 model CustomerProfile {
@@ -166,6 +167,7 @@ model Order {
   payments       PaymentRecord[]
   auditLogs      AuditLog[]
   executionMedia ExecutionMedia[]
+  payouts        WorkerPayout[]
 }
 
 model OrderItem {
@@ -257,4 +259,20 @@ model ExecutionMedia {
   imageUrl    String   // Base64 string or Cloud storage URL
   caption     String?
   createdAt   DateTime @default(now())
+}
+
+model WorkerPayout {
+  id            String   @id @default(uuid())
+  orderId       String?
+  order         Order?   @relation(fields: [orderId], references: [id])
+  workerId      String
+  worker        User     @relation(fields: [workerId], references: [id])
+  baseAmount    Float
+  bonusAmount   Float    @default(0)
+  totalAmount   Float
+  payoutMode    String   // "UPI" | "CASH" | "BANK_TRANSFER"
+  transactionRef String?
+  status        String   @default("PAID") // "PAID" | "PENDING"
+  notes         String?
+  createdAt     DateTime @default(now())
 }

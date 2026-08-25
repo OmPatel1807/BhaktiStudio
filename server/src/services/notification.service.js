@@ -196,6 +196,16 @@ export class NotificationService {
             });
             break;
 
+          case 'WORKER_PAYOUT_SETTLED':
+            await InAppProvider.send({
+              userId: payload.workerId,
+              title: '💰 Payout Settled',
+              message: `Bhakti Studio settled a payout of Rs. ${payload.totalAmount} for you.`,
+              actionUrl: `/worker/dashboard`,
+              type: 'WORKER_PAYOUT_SETTLED',
+            });
+            break;
+
           default:
             console.log(`[NotificationService]: Unhandled event type '${eventType}'`);
         }

@@ -600,3 +600,97 @@ export const getWorkerMyOrders = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/**
+ * GET /api/v1/worker/earnings
+ * WORKER: Get authenticated worker's lifetime earnings & payouts history passbook
+ */
+export const getWorkerEarnings = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    let workerProfile = await prisma.workerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!workerProfile) {
+      return res.json({
+        success: true,
+        data: {
+          totalLifetimeEarnings: 0,
+          pendingSettlement: 0,
+          completedEventsCount: 0,
+          payouts: [],
+        },
+      });
+    }
+
+    // 1. Lifetime Earnings
+    const payoutsAgg = await prisma.workerPayout.aggregate({
+      where: { workerId: userId },
+      _sum: {
+        totalAmount: true,
+      },
+    });
+    const totalLifetimeEarnings = payoutsAgg._sum.totalAmount || 0;
+
+    // 2. Completed Events assignments
+    const completedAssignments = await prisma.workerAssignment.findMany({
+      where: {
+        workerId: workerProfile.id,
+        status: 'ACCEPTED',
+        order: {
+          status: { in: ['EVENT_COMPLETED', 'COMPLETED'] },
+        },
+      },
+      include: {
+        order: true,
+      },
+    });
+
+    const completedEventsCount = completedAssignments.length;
+
+    // 3. Find which completed events do not have payouts yet
+    let unpaidCount = 0;
+    for (const asg of completedAssignments) {
+      const payoutExists = await prisma.workerPayout.findFirst({
+        where: {
+          orderId: asg.orderId,
+          workerId: userId,
+        },
+      });
+      if (!payoutExists) {
+        unpaidCount++;
+      }
+    }
+    const pendingSettlement = unpaidCount * 2000;
+
+    // 4. Detailed Payouts list
+    const payouts = await prisma.workerPayout.findMany({
+      where: { workerId: userId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        order: {
+          select: {
+            orderNumber: true,
+            eventType: true,
+            eventDate: true,
+          },
+        },
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        totalLifetimeEarnings,
+        pendingSettlement,
+        completedEventsCount,
+        payouts,
+      },
+    });
+  } catch (error) {
+    console.error('getWorkerEarnings error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

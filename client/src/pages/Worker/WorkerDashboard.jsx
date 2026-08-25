@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
 import { useAuth } from '../../context/AuthContext';
 import { formatDateTime } from '../../utils/formatters';
 
@@ -13,9 +14,131 @@ export const WorkerDashboard = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [toast, setToast] = useState(null);
 
+  // Worker Earnings and Payouts State
+  const [activeMainTab, setActiveMainTab] = useState('jobs'); // 'jobs' | 'earnings'
+  const [earningsData, setEarningsData] = useState({
+    totalLifetimeEarnings: 0,
+    pendingSettlement: 0,
+    completedEventsCount: 0,
+    payouts: [],
+  });
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+  const downloadPayoutReceipt = (payout) => {
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a5'
+      });
+
+      // Styles
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, 148, 210, 'F');
+
+      doc.setDrawColor(195, 155, 90);
+      doc.setLineWidth(1);
+      doc.line(10, 10, 138, 10);
+      doc.line(10, 10, 10, 200);
+      doc.line(138, 10, 138, 200);
+      doc.line(10, 200, 138, 200);
+
+      doc.setTextColor(248, 250, 252);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('BHAKTI STUDIO', 74, 25, { align: 'center' });
+      doc.setFontSize(11);
+      doc.setTextColor(195, 155, 90);
+      doc.text('PAYMENT RECEIPT & SETTLEMENT SLIP', 74, 32, { align: 'center' });
+
+      doc.setDrawColor(51, 65, 85);
+      doc.line(20, 42, 128, 42);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Receipt ID:', 20, 52);
+      doc.setTextColor(248, 250, 252);
+      doc.text(payout.id.slice(0, 8).toUpperCase(), 60, 52);
+
+      doc.setTextColor(148, 163, 184);
+      doc.text('Date Settled:', 20, 60);
+      doc.setTextColor(248, 250, 252);
+      doc.text(new Date(payout.createdAt).toLocaleDateString(), 60, 60);
+
+      doc.setTextColor(148, 163, 184);
+      doc.text('Recipient Crew:', 20, 68);
+      doc.setTextColor(248, 250, 252);
+      doc.text(user?.name || 'Technician', 60, 68);
+
+      doc.setTextColor(148, 163, 184);
+      doc.text('Linked Event:', 20, 76);
+      doc.setTextColor(248, 250, 252);
+      doc.text(payout.order?.orderNumber || 'General Settlement', 60, 76);
+
+      doc.line(20, 86, 128, 86);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(195, 155, 90);
+      doc.text('Breakdown', 20, 96);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Base Wage Amount:', 20, 108);
+      doc.setTextColor(248, 250, 252);
+      doc.text(`Rs. ${payout.baseAmount.toFixed(2)}`, 128, 108, { align: 'right' });
+
+      doc.setTextColor(148, 163, 184);
+      doc.text('Overtime / Bonus:', 20, 116);
+      doc.setTextColor(248, 250, 252);
+      doc.text(`Rs. ${payout.bonusAmount.toFixed(2)}`, 128, 116, { align: 'right' });
+
+      doc.line(20, 124, 128, 124);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(195, 155, 90);
+      doc.text('Total Settled Amount:', 20, 134);
+      doc.setTextColor(16, 185, 129);
+      doc.text(`Rs. ${payout.totalAmount.toFixed(2)}`, 128, 134, { align: 'right' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.text('Payment Mode:', 20, 150);
+      doc.setTextColor(248, 250, 252);
+      doc.text(payout.payoutMode, 60, 150);
+
+      doc.setTextColor(148, 163, 184);
+      doc.text('Transaction Ref:', 20, 158);
+      doc.setTextColor(248, 250, 252);
+      doc.text(payout.transactionRef || 'N/A', 60, 158);
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text('This is a digitally generated settlement voucher.', 74, 180, { align: 'center' });
+      doc.text('Thank you for your outstanding contribution to Bhakti Studio!', 74, 185, { align: 'center' });
+
+      doc.save(`Payout_Receipt_${payout.id.slice(0, 8).toUpperCase()}.pdf`);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to download receipt', 'error');
+    }
+  };
+  const fetchEarnings = async () => {
+    try {
+      const res = await fetch('/api/v1/worker/earnings', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) setEarningsData(json.data);
+    } catch (err) {
+      console.error('Failed to load earnings', err);
+    }
   };
 
   const fetchAssignedJobs = async () => {
@@ -34,7 +157,10 @@ export const WorkerDashboard = () => {
   };
 
   useEffect(() => {
-    if (token) fetchAssignedJobs();
+    if (token) {
+      fetchAssignedJobs();
+      fetchEarnings();
+    }
   }, [token]);
 
   const handleRespondJob = async (id, action, reason = '') => {
@@ -106,8 +232,45 @@ export const WorkerDashboard = () => {
             Review assigned event production jobs, check venue details, and update execution status.
           </p>
 
+          {/* Main Tab Switcher */}
+          <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', marginTop: '24px', paddingBottom: '2px' }}>
+            <button
+              onClick={() => setActiveMainTab('jobs')}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderBottom: activeMainTab === 'jobs' ? '3px solid #C39B5A' : '3px solid transparent',
+                color: activeMainTab === 'jobs' ? '#C39B5A' : 'var(--text-secondary)',
+                fontWeight: '800',
+                fontSize: '15px',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🛠️ Job Assignments
+            </button>
+            <button
+              onClick={() => setActiveMainTab('earnings')}
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderBottom: activeMainTab === 'earnings' ? '3px solid #C39B5A' : '3px solid transparent',
+                color: activeMainTab === 'earnings' ? '#C39B5A' : 'var(--text-secondary)',
+                fontWeight: '800',
+                fontSize: '15px',
+                padding: '10px 20px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              💰 Earnings & Payouts
+            </button>
+          </div>
+
           {/* Filter Tabs */}
-          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+          {activeMainTab === 'jobs' && (
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
             {[
               { id: 'ALL', label: 'All Jobs' },
               { id: 'PENDING', label: '⏳ Pending Confirmation' },
@@ -135,10 +298,12 @@ export const WorkerDashboard = () => {
               );
             })}
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Jobs Feed */}
-        {loading ? (
+      {/* Jobs Feed */}
+      {activeMainTab === 'jobs' && (
+        loading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading assignments...</div>
         ) : filteredJobs.length === 0 ? (
           <div
@@ -315,6 +480,95 @@ export const WorkerDashboard = () => {
                 </div>
               );
             })}
+          </div>
+        ))}
+
+        {/* Earnings & Passbook View */}
+        {activeMainTab === 'earnings' && (
+          <div style={{ marginTop: '24px' }}>
+            {/* Stats Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+              <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💰 Lifetime Earnings</span>
+                <h2 style={{ fontSize: '28px', fontWeight: '800', margin: '8px 0 0 0', color: '#10B981' }}>Rs. {earningsData.totalLifetimeEarnings.toLocaleString()}</h2>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>⏳ Pending Settlement</span>
+                <h2 style={{ fontSize: '28px', fontWeight: '800', margin: '8px 0 0 0', color: '#EF4444' }}>Rs. {earningsData.pendingSettlement.toLocaleString()}</h2>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '20px', padding: '24px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📜 Completed Events</span>
+                <h2 style={{ fontSize: '28px', fontWeight: '800', margin: '8px 0 0 0', color: '#C39B5A' }}>{earningsData.completedEventsCount} Events</h2>
+              </div>
+            </div>
+
+            {/* Passbook History List */}
+            <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '24px', padding: '28px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 20px 0', color: 'var(--text-primary)' }}>
+                📜 Crew Payout Passbook & Transaction Ledger
+              </h3>
+
+              {earningsData.payouts.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                  No payout records found in your passbook ledger.
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', color: 'var(--text-primary)' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                        <th style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '800' }}>Date</th>
+                        <th style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '800' }}>Event Details</th>
+                        <th style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '800' }}>Payment Mode</th>
+                        <th style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '800', textAlign: 'right' }}>Base Wage</th>
+                        <th style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '800', textAlign: 'right' }}>Bonus</th>
+                        <th style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '800', textAlign: 'right' }}>Total Paid</th>
+                        <th style={{ padding: '12px 8px', color: 'var(--text-secondary)', fontWeight: '800', textAlign: 'center' }}>Voucher</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {earningsData.payouts.map((pay) => (
+                        <tr key={pay.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td style={{ padding: '16px 8px' }}>{new Date(pay.createdAt).toLocaleDateString()}</td>
+                          <td style={{ padding: '16px 8px' }}>
+                            <div style={{ fontWeight: '700' }}>{pay.order?.orderNumber || 'General Settlement'}</div>
+                            {pay.order && <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{pay.order.eventType}</div>}
+                            {pay.notes && <div style={{ fontSize: '11px', color: '#C39B5A', marginTop: '2px', fontStyle: 'italic' }}>Note: {pay.notes}</div>}
+                          </td>
+                          <td style={{ padding: '16px 8px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '800', color: '#94A3B8' }}>{pay.payoutMode}</span>
+                            {pay.transactionRef && <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Ref: {pay.transactionRef}</div>}
+                          </td>
+                          <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: '600' }}>Rs. {pay.baseAmount.toFixed(2)}</td>
+                          <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: '600', color: pay.bonusAmount > 0 ? '#10B981' : 'var(--text-secondary)' }}>
+                            Rs. {pay.bonusAmount.toFixed(2)}
+                          </td>
+                          <td style={{ padding: '16px 8px', textAlign: 'right', fontWeight: '800', color: '#10B981' }}>Rs. {pay.totalAmount.toFixed(2)}</td>
+                          <td style={{ padding: '16px 8px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => downloadPayoutReceipt(pay)}
+                              style={{
+                                backgroundColor: 'rgba(195,155,90,0.15)',
+                                color: '#C39B5A',
+                                border: '1px solid #C39B5A',
+                                borderRadius: '8px',
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                fontWeight: '750',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              📥 PDF Receipt
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

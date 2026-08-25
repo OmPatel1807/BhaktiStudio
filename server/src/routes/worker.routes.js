@@ -12,6 +12,7 @@ import {
   rejectWorker,
   uploadExecutionMedia,
   getWorkerMyOrders,
+  getWorkerEarnings,
 } from '../controllers/worker.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/rbac.middleware.js';
@@ -23,6 +24,7 @@ router.post('/apply', applyWorker);
 
 // Worker Operations Proof of Execution Upload
 router.get('/my-orders', authenticateToken, getWorkerMyOrders);
+router.get('/earnings', authenticateToken, getWorkerEarnings);
 router.post('/orders/:orderId/upload-media', authenticateToken, uploadExecutionMedia);
 
 // Admin Routes for Pending Approvals Queue

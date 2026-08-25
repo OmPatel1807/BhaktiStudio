@@ -190,3 +190,124 @@ export const updateOrderQuotation = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/**
+ * POST /api/v1/admin/workers/:workerId/payout
+ * ADMIN: Settle/issue worker payout
+ */
+export const createWorkerPayout = async (req, res) => {
+  try {
+    const { workerId } = req.params;
+    const { baseAmount, bonusAmount = 0, payoutMode, orderId, transactionRef, notes } = req.body;
+
+    if (!baseAmount || !payoutMode) {
+      return res.status(400).json({ success: false, message: 'Base Amount and Payout Mode are required.' });
+    }
+
+    const worker = await prisma.user.findUnique({ where: { id: workerId } });
+    if (!worker) {
+      return res.status(404).json({ success: false, message: 'Worker not found.' });
+    }
+
+    const baseVal = Number(baseAmount);
+    const bonusVal = Number(bonusAmount);
+    const totalVal = baseVal + bonusVal;
+
+    const payout = await prisma.workerPayout.create({
+      data: {
+        workerId,
+        orderId: orderId || null,
+        baseAmount: baseVal,
+        bonusAmount: bonusVal,
+        totalAmount: totalVal,
+        payoutMode,
+        transactionRef: transactionRef || null,
+        notes: notes || null,
+        status: 'PAID',
+      },
+      include: {
+        order: true,
+      },
+    });
+
+    // Create Audit Log
+    await prisma.auditLog.create({
+      data: {
+        actorId: req.user.userId,
+        action: 'WORKER_PAYOUT_SETTLED',
+        details: JSON.stringify({ payoutId: payout.id, workerName: worker.name, totalAmount: totalVal }),
+      },
+    });
+
+    // Dispatch Notification
+    await NotificationService.dispatch({
+      eventType: 'WORKER_PAYOUT_SETTLED',
+      payload: {
+        workerId,
+        workerName: worker.name,
+        totalAmount: totalVal,
+        payoutId: payout.id,
+      },
+    });
+
+    return res.status(201).json({ success: true, message: 'Payout settled successfully.', data: payout });
+  } catch (error) {
+    console.error('createWorkerPayout error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * GET /api/v1/admin/workers/payouts-summary
+ * ADMIN: Global payroll analytics summary
+ */
+export const getWorkerPayoutsSummary = async (req, res) => {
+  try {
+    const aggregations = await prisma.workerPayout.aggregate({
+      _sum: {
+        totalAmount: true,
+      },
+    });
+    const totalPaid = aggregations._sum.totalAmount || 0;
+
+    const completedAssignments = await prisma.workerAssignment.findMany({
+      where: {
+        status: 'ACCEPTED',
+        order: {
+          status: { in: ['EVENT_COMPLETED', 'COMPLETED'] },
+        },
+      },
+      include: {
+        order: true,
+        worker: { include: { user: true } },
+      },
+    });
+
+    let unpaidCount = 0;
+    for (const asg of completedAssignments) {
+      const workerUser = asg.worker.user;
+      const payoutExists = await prisma.workerPayout.findFirst({
+        where: {
+          orderId: asg.orderId,
+          workerId: workerUser.id,
+        },
+      });
+      if (!payoutExists) {
+        unpaidCount++;
+      }
+    }
+
+    const unsettledDues = unpaidCount * 2000;
+
+    return res.json({
+      success: true,
+      data: {
+        totalPaid,
+        unsettledDues,
+      },
+    });
+  } catch (error) {
+    console.error('getWorkerPayoutsSummary error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};

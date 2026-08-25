@@ -12,6 +12,21 @@ export const WorkerManager = () => {
   const [showAddWorkerModal, setShowAddWorkerModal] = useState(false);
   const [toast, setToast] = useState(null);
 
+  // Worker Payout State variables
+  const [payoutModal, setPayoutModal] = useState({
+    isOpen: false,
+    worker: null,
+    baseAmount: '',
+    bonusAmount: '',
+    payoutMode: 'UPI',
+    selectedEventId: '',
+    transactionRef: '',
+    notes: '',
+  });
+  const [completedEvents, setCompletedEvents] = useState([]);
+  const [payoutSubmitting, setPayoutSubmitting] = useState(false);
+  const [payoutsSummary, setPayoutsSummary] = useState({ totalPaid: 0, unsettledDues: 0 });
+
   // New Worker Form State
   const [newWorker, setNewWorker] = useState({
     name: '',
@@ -70,6 +85,38 @@ export const WorkerManager = () => {
     }
   };
 
+  const fetchPayoutsSummary = async () => {
+    try {
+      const res = await fetch('/api/v1/admin/workers/payouts-summary', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) {
+        setPayoutsSummary(json.data);
+      }
+    } catch (err) {
+      console.error('Failed to load payouts summary:', err);
+    }
+  };
+
+  const fetchWorkerEvents = async (userId) => {
+    try {
+      const res = await fetch('/api/v1/orders/all', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) {
+        const workerEvents = json.data.filter(order => 
+          order.assignments?.some(a => a.worker?.user?.id === userId) &&
+          ['EVENT_COMPLETED', 'COMPLETED'].includes(order.status)
+        );
+        setCompletedEvents(workerEvents);
+      }
+    } catch (err) {
+      console.error('Failed to load worker events:', err);
+    }
+  };
+
   const fetchWorkerAvailability = async (workerId) => {
     try {
       const res = await fetch(`/api/v1/workers/${workerId}/availability`, {
@@ -86,6 +133,7 @@ export const WorkerManager = () => {
     if (token) {
       fetchWorkers();
       fetchPendingWorkers();
+      fetchPayoutsSummary();
     }
   }, [token]);
 
@@ -163,6 +211,71 @@ export const WorkerManager = () => {
       }
     } catch (err) {
       showToast('Failed to create worker profile', 'error');
+    }
+  };
+
+  const handleOpenPayoutModal = (workerObj) => {
+    setPayoutModal({
+      isOpen: true,
+      worker: workerObj,
+      baseAmount: '',
+      bonusAmount: '',
+      payoutMode: 'UPI',
+      selectedEventId: '',
+      transactionRef: '',
+      notes: '',
+    });
+    fetchWorkerEvents(workerObj.user.id);
+  };
+
+  const handleSettlePayout = async (e) => {
+    e.preventDefault();
+    if (!payoutModal.baseAmount || !payoutModal.payoutMode) {
+      showToast('Base wage and payment mode are required', 'error');
+      return;
+    }
+
+    setPayoutSubmitting(true);
+    try {
+      const res = await fetch(`/api/v1/admin/workers/${payoutModal.worker.user.id}/payout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          baseAmount: Number(payoutModal.baseAmount),
+          bonusAmount: Number(payoutModal.bonusAmount || 0),
+          payoutMode: payoutModal.payoutMode,
+          orderId: payoutModal.selectedEventId || undefined,
+          transactionRef: payoutModal.transactionRef || undefined,
+          notes: payoutModal.notes || undefined,
+        }),
+      });
+
+      const json = await res.json();
+      setPayoutSubmitting(false);
+
+      if (json.success) {
+        showToast('Payout settled successfully!');
+        setPayoutModal({
+          isOpen: false,
+          worker: null,
+          baseAmount: '',
+          bonusAmount: '',
+          payoutMode: 'UPI',
+          selectedEventId: '',
+          transactionRef: '',
+          notes: '',
+        });
+        fetchWorkers();
+        fetchPayoutsSummary();
+      } else {
+        showToast(json.message || 'Failed to settle payout', 'error');
+      }
+    } catch (err) {
+      setPayoutSubmitting(false);
+      showToast('Network error settling payout', 'error');
     }
   };
 
@@ -399,6 +512,18 @@ export const WorkerManager = () => {
         {/* TAB 1: DIRECTORY */}
         {activeTab === 'directory' && (
           <div>
+            {/* Global Payroll Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '750', textTransform: 'uppercase' }}>Total Paid to Crew</span>
+                <h3 style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0 0 0', color: '#10B981' }}>₹{payoutsSummary.totalPaid.toLocaleString()}</h3>
+              </div>
+              <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)' }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '750', textTransform: 'uppercase' }}>Unsettled Crew Dues</span>
+                <h3 style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0 0 0', color: '#EF4444' }}>₹{payoutsSummary.unsettledDues.toLocaleString()}</h3>
+              </div>
+            </div>
+
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading directory...</div>
             ) : (
@@ -452,29 +577,55 @@ export const WorkerManager = () => {
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        borderTop: '1px solid var(--border-color)',
-                        paddingTop: '12px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        fontSize: '13px',
-                      }}
-                    >
-                      <span style={{ color: 'var(--text-secondary)' }}>Exp: <strong>{w.experienceYrs} yrs</strong></span>
-                      <span
+                    <div>
+                      <div
                         style={{
-                          backgroundColor: (w.assignments || []).length > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                          color: (w.assignments || []).length > 0 ? '#EF4444' : '#10B981',
-                          padding: '4px 10px',
-                          borderRadius: '12px',
-                          fontWeight: '700',
-                          fontSize: '11px',
+                          borderTop: '1px solid var(--border-color)',
+                          paddingTop: '12px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          fontSize: '13px',
+                          marginBottom: '12px',
                         }}
                       >
-                        {(w.assignments || []).length > 0 ? `${w.assignments.length} ACTIVE JOBS` : 'FREE / AVAILABLE'}
-                      </span>
+                        <span style={{ color: 'var(--text-secondary)' }}>Exp: <strong>{w.experienceYrs} yrs</strong></span>
+                        <span
+                          style={{
+                            backgroundColor: (w.assignments || []).length > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                            color: (w.assignments || []).length > 0 ? '#EF4444' : '#10B981',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            fontWeight: '700',
+                            fontSize: '11px',
+                          }}
+                        >
+                          {(w.assignments || []).length > 0 ? `${w.assignments.length} ACTIVE JOBS` : 'FREE / AVAILABLE'}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPayoutModal(w)}
+                        style={{
+                          backgroundColor: '#F59E0B',
+                          color: '#0F172A',
+                          border: 'none',
+                          borderRadius: '10px',
+                          padding: '10px 16px',
+                          fontSize: '13px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          width: '100%',
+                          transition: 'background-color 0.2s',
+                        }}
+                      >
+                        💳 Settle Payout
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -1264,6 +1415,228 @@ export const WorkerManager = () => {
                   }}
                 >
                   {leaveSubmitting ? 'Recording...' : 'Confirm Leave Date'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Payout Settlement Modal */}
+      {payoutModal.isOpen && payoutModal.worker && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#1E293B',
+              border: '1px solid #334155',
+              borderRadius: '24px',
+              padding: '32px',
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              color: '#F8FAFC',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#F59E0B' }}>
+                💳 Settle Worker Payout
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPayoutModal({ ...payoutModal, isOpen: false })}
+                style={{ backgroundColor: 'transparent', border: 'none', color: '#94A3B8', fontSize: '20px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ backgroundColor: '#0F172A', padding: '16px', borderRadius: '14px', marginBottom: '20px', fontSize: '13px' }}>
+              <div>👤 <strong>Worker Name:</strong> {payoutModal.worker.user.name}</div>
+              <div style={{ marginTop: '4px' }}>🛡️ <strong>Role:</strong> {payoutModal.worker.specialization[0] || 'Event Crew'}</div>
+              <div style={{ marginTop: '4px' }}>📱 <strong>UPI ID:</strong> {payoutModal.worker.user.phone ? `${payoutModal.worker.user.phone}@okaxis` : `${payoutModal.worker.user.name.toLowerCase().replace(/\s+/g, '')}@okaxis`}</div>
+            </div>
+
+            <form onSubmit={handleSettlePayout} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94A3B8', marginBottom: '6px' }}>
+                  Select Completed Event
+                </label>
+                <select
+                  value={payoutModal.selectedEventId}
+                  onChange={(e) => setPayoutModal({ ...payoutModal, selectedEventId: e.target.value })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '10px',
+                    color: '#F8FAFC',
+                    fontSize: '14px',
+                  }}
+                >
+                  <option value="">General Settlement (No Event Link)</option>
+                  {completedEvents.map((evt) => (
+                    <option key={evt.id} value={evt.id}>
+                      {evt.orderNumber} — {evt.eventType} ({new Date(evt.eventDate).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94A3B8', marginBottom: '6px' }}>
+                    Base Wage (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="2000"
+                    value={payoutModal.baseAmount}
+                    onChange={(e) => setPayoutModal({ ...payoutModal, baseAmount: e.target.value })}
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#0F172A',
+                      border: '1px solid #334155',
+                      borderRadius: '10px',
+                      padding: '10px',
+                      color: '#F8FAFC',
+                      fontSize: '14px',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94A3B8', marginBottom: '6px' }}>
+                    Bonus / Tip (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="300"
+                    value={payoutModal.bonusAmount}
+                    onChange={(e) => setPayoutModal({ ...payoutModal, bonusAmount: e.target.value })}
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#0F172A',
+                      border: '1px solid #334155',
+                      borderRadius: '10px',
+                      padding: '10px',
+                      color: '#F8FAFC',
+                      fontSize: '14px',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94A3B8', marginBottom: '6px' }}>
+                  Payment Mode *
+                </label>
+                <select
+                  value={payoutModal.payoutMode}
+                  onChange={(e) => setPayoutModal({ ...payoutModal, payoutMode: e.target.value })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '10px',
+                    color: '#F8FAFC',
+                    fontSize: '14px',
+                  }}
+                >
+                  <option value="UPI">UPI Payment</option>
+                  <option value="CASH">Cash Settlement</option>
+                  <option value="BANK_TRANSFER">Direct Bank Transfer</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94A3B8', marginBottom: '6px' }}>
+                  Transaction Reference ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="UPI Ref / Txn ID"
+                  value={payoutModal.transactionRef}
+                  onChange={(e) => setPayoutModal({ ...payoutModal, transactionRef: e.target.value })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '10px',
+                    color: '#F8FAFC',
+                    fontSize: '14px',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#94A3B8', marginBottom: '6px' }}>
+                  Private Notes
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Performance bonus or remarks..."
+                  value={payoutModal.notes}
+                  onChange={(e) => setPayoutModal({ ...payoutModal, notes: e.target.value })}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '10px',
+                    color: '#F8FAFC',
+                    fontSize: '14px',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px', justifyContent: 'end' }}>
+                <button
+                  type="button"
+                  onClick={() => setPayoutModal({ ...payoutModal, isOpen: false })}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: '1px solid #334155',
+                    borderRadius: '12px',
+                    padding: '12px 20px',
+                    color: '#94A3B8',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={payoutSubmitting}
+                  style={{
+                    backgroundColor: '#F59E0B',
+                    color: '#0F172A',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '12px 20px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '800',
+                    boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                  }}
+                >
+                  {payoutSubmitting ? 'Processing...' : 'Confirm Settlement'}
                 </button>
               </div>
             </form>
