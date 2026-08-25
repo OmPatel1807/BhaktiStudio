@@ -136,7 +136,7 @@ export const downloadQuotationPdf = (order) => {
     // 4. FINANCIAL BREAKDOWN & OVERHEADS SUMMARY
     const finalY = doc.lastAutoTable.finalY + 8;
     
-    let itemsSubtotal = 0;
+    let calculatedItemsSubtotal = 0;
     itemsList.forEach((it) => {
       const name = it.name || it.serviceName || it.title || '';
       const isSqFt = it.unit === 'sqft' || name.toLowerCase().includes('led') || (it.serviceName || '').toLowerCase().includes('led');
@@ -144,18 +144,19 @@ export const downloadQuotationPdf = (order) => {
       const height = Number(it.heightFt || it.ledHeight || it.height || (isSqFt ? order.ledHeightFeet : 0) || 0);
       const qtyVal = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
       const rateVal = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
-      itemsSubtotal += qtyVal * rateVal * days;
+      const lineTotal = qtyVal * rateVal * days;
+      calculatedItemsSubtotal += lineTotal;
     });
 
-    const setupCost = Number(quotation.setupFee || quotation.setupCost || 0);
-    const transportCost = Number(quotation.transportFee || quotation.transportCost || quotation.logisticsCost || 0);
-    const techCost = Number(quotation.technicianFee || quotation.technicianCost || quotation.techSupportCost || 0);
-    const discountVal = Number(quotation.discounts || quotation.discount || 0);
+    const setupCost = Number(quotation.setupFee ?? quotation.setupCost ?? order.setupCost ?? 3000);
+    const transportCost = Number(quotation.transportFee ?? quotation.transportCost ?? quotation.logisticsCost ?? order.logisticsCost ?? 100);
+    const techCost = Number(quotation.technicianFee ?? quotation.technicianCost ?? quotation.techSupportCost ?? order.techSupportCost ?? 2000);
+    const discountVal = Number(quotation.discounts ?? quotation.discount ?? order.discount ?? 0);
 
-    const totalBeforeDiscount = itemsSubtotal + setupCost + transportCost + techCost;
-    const taxableBase = Math.max(0, totalBeforeDiscount - discountVal);
-    const taxGst = taxableBase * 0.18;
-    const grandTotal = Number(quotation.totalAmount || quotation.grandTotal || (taxableBase + taxGst));
+    const totalOverheads = setupCost + transportCost + techCost;
+    const baseTaxableAmount = Math.max(0, calculatedItemsSubtotal + totalOverheads - discountVal);
+    const calculatedGst = baseTaxableAmount * 0.18;
+    const calculatedGrandTotal = baseTaxableAmount + calculatedGst;
 
     // Summary Box Drawing
     const hasDiscount = discountVal > 0;
@@ -177,7 +178,7 @@ export const downloadQuotationPdf = (order) => {
       rowY += 5.5;
     };
 
-    renderSummaryRow('Equipment Subtotal:', `Rs. ${itemsSubtotal.toLocaleString('en-IN')}`);
+    renderSummaryRow('Equipment Subtotal:', `Rs. ${calculatedItemsSubtotal.toLocaleString('en-IN')}`);
     
     if (setupCost > 0) {
       renderSummaryRow('Setup & Rigging Charges:', `+ Rs. ${setupCost.toLocaleString('en-IN')}`);
@@ -191,7 +192,7 @@ export const downloadQuotationPdf = (order) => {
     if (discountVal > 0) {
       renderSummaryRow('Special Discount:', `- Rs. ${discountVal.toLocaleString('en-IN')}`, false, [16, 185, 129]);
     }
-    renderSummaryRow('GST (18% Inclusive):', `+ Rs. ${taxGst.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`);
+    renderSummaryRow('GST (18% Inclusive):', `+ Rs. ${calculatedGst.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`);
 
     // Divider inside summary
     doc.setDrawColor(203, 213, 225);
@@ -204,7 +205,7 @@ export const downloadQuotationPdf = (order) => {
     doc.setTextColor(...navyDark);
     doc.text('Grand Payable Total:', 114, rowY);
     doc.setTextColor(217, 119, 6);
-    doc.text(`Rs. ${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 192, rowY, { align: 'right' });
+    doc.text(`Rs. ${calculatedGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 192, rowY, { align: 'right' });
 
     // 5. TERMS & BANK SETTLEMENT SECTION (Bottom-Left)
     doc.setFont('helvetica', 'bold');
