@@ -11,208 +11,226 @@ export const downloadQuotationPdf = (order) => {
       format: 'a4'
     });
 
-    const primaryColor = [17, 26, 46]; // #111A2E Navy
-    const goldColor = [245, 158, 11];  // #F59E0B Gold
-    const textDark = [33, 37, 41];
+    // Brand Palette
+    const navyDark = [11, 17, 32];     // #0B1120
+    const navyHeader = [17, 26, 46];   // #111A2E
+    const goldPrimary = [245, 158, 11]; // #F59E0B
+    const textDark = [15, 23, 42];     // Slate 900
+    const textMuted = [100, 116, 139];  // Slate 500
+    const bgLight = [248, 250, 252];    // Slate 50
 
-    // Header Background
-    doc.setFillColor(...primaryColor);
-    doc.rect(0, 0, 210, 42, 'F');
+    // 1. TOP HEADER BANNER
+    doc.setFillColor(...navyHeader);
+    doc.rect(0, 0, 210, 44, 'F');
 
-    // Studio Branding
+    // Studio Name & Subtitle
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.setTextColor(245, 158, 11);
-    doc.text('BHAKTI STUDIO', 14, 20);
+    doc.setFontSize(20);
+    doc.setTextColor(...goldPrimary);
+    doc.text('BHAKTI STUDIO', 14, 18);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(203, 213, 225);
-    doc.text('Event Production & Cinematography Services', 14, 27);
-    doc.text('Surat, Gujarat, India | contact@bhaktistudio.com', 14, 33);
+    doc.text('PREMIUM EVENT PRODUCTION & CINEMATOGRAPHY', 14, 25);
+    doc.text('Surat, Gujarat, India  |  contact@bhaktistudio.com', 14, 31);
+    doc.text('GSTIN: 24AAACB0000A1Z5', 14, 37);
 
-    // Document Title Badge (Right-aligned)
+    // Document Title & Reference (Right Side)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(255, 255, 255);
-    doc.text('OFFICIAL QUOTATION', 196, 20, { align: 'right' });
+    doc.text('OFFICIAL QUOTATION', 196, 18, { align: 'right' });
 
+    const orderCode = order.orderNumber || `BS-2026-${String(order.id || '00001').padStart(5, '0')}`;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(203, 213, 225);
-    const orderCode = order.orderNumber || `BS-2026-${String(order.id || '00001').padStart(5, '0')}`;
-    doc.text(`Quotation #: ${orderCode}`, 196, 27, { align: 'right' });
-    doc.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, 196, 33, { align: 'right' });
+    doc.text(`Quotation Ref: ${orderCode}`, 196, 26, { align: 'right' });
+    doc.text(`Issued Date: ${new Date().toLocaleDateString('en-IN')}`, 196, 32, { align: 'right' });
+    doc.text('Status: APPROVED & ISSUED', 196, 38, { align: 'right' });
 
-    // Client & Event Information Section
-    doc.setTextColor(...textDark);
+    // Gold Divider Line
+    doc.setDrawColor(...goldPrimary);
+    doc.setLineWidth(0.8);
+    doc.line(0, 44, 210, 44);
+
+    // 2. CLIENT & EVENT DETAILS CARD
+    doc.setFillColor(...bgLight);
+    doc.roundedRect(14, 50, 182, 28, 2, 2, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(14, 50, 182, 28, 2, 2, 'D');
+
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('CLIENT & EVENT DETAILS', 14, 52);
-
-    doc.setDrawColor(245, 158, 11);
-    doc.setLineWidth(0.6);
-    doc.line(14, 54, 70, 54);
+    doc.setFontSize(9);
+    doc.setTextColor(...navyDark);
+    doc.text('EVENT & CLIENT SUMMARY', 18, 57);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
-    doc.text(`Event Type: ${order.eventType || 'Event Production'}`, 14, 61);
-    doc.text(`Venue / Location: ${order.venueAddress || 'Surat'}`, 14, 67);
-    doc.text(`Event Date: ${order.eventDate ? new Date(order.eventDate).toLocaleDateString('en-IN') : 'Scheduled Date'}`, 14, 73);
+    doc.setFontSize(8.5);
+    doc.setTextColor(...textDark);
+    doc.text(`Event Type: ${order.eventType || 'Event Production'}`, 18, 65);
+    doc.text(`Venue / Location: ${order.venueAddress || 'Surat / Gujarat'}`, 18, 71);
 
-    // Parse Items Table
+    const eventDateStr = order.eventDate ? new Date(order.eventDate).toLocaleDateString('en-IN') : 'Scheduled';
+    doc.text(`Execution Date: ${eventDateStr}`, 115, 65);
+    doc.text(`Payment Terms: 30% Advance Lock`, 115, 71);
+
+    // 3. TABLE OF LINE ITEMS
     const quotation = order.quotations?.[0] || order.quotation || {};
     const itemsList = quotation.items || order.orderItems || order.items || [
-      { name: order.eventType || 'Event Setup & Coverage', quantity: 1, rate: order.grandTotal || order.totalAmount || 43660 }
+      { name: order.eventType || 'Complete Event Setup', quantity: 1, rate: order.grandTotal || 43660 }
     ];
 
     const days = Number(order.totalDays || 1);
 
     const tableRows = itemsList.map((it, idx) => {
-      const name = it.name || it.serviceName || it.title || `Service Item #${idx + 1}`;
+      const name = it.name || it.serviceName || it.title || `Production Service #${idx + 1}`;
       const isSqFt = it.unit === 'sqft' || name.toLowerCase().includes('led') || (it.serviceName || '').toLowerCase().includes('led');
       const width = Number(it.widthFt || it.ledWidth || it.width || (isSqFt ? order.ledWidthFeet : 0) || 0);
       const height = Number(it.heightFt || it.ledHeight || it.height || (isSqFt ? order.ledHeightFeet : 0) || 0);
       
-      const qty = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
-      const qtyString = isSqFt ? `${qty} sq ft` : `${qty}`;
-      
-      const rate = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
-      const total = qty * rate * days;
-      
-      return [idx + 1, name, qtyString, `₹${rate.toLocaleString('en-IN')}`, `₹${total.toLocaleString('en-IN')}`];
+      const qtyVal = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
+      const qtyStr = isSqFt ? `${qtyVal} sq ft` : `${qtyVal}`;
+      const rateVal = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
+      const totalVal = qtyVal * rateVal * days;
+
+      return [
+        idx + 1,
+        name,
+        qtyStr,
+        `Rs. ${rateVal.toLocaleString('en-IN')}`,
+        `Rs. ${totalVal.toLocaleString('en-IN')}`
+      ];
     });
 
     autoTable(doc, {
-      startY: 82,
-      head: [['#', 'Item / Service Description', 'Qty', 'Unit Rate (₹)', 'Amount (₹)']],
+      startY: 84,
+      head: [['#', 'Item / Service Description', 'Quantity / Area', 'Unit Rate (INR)', 'Amount (INR)']],
       body: tableRows,
       theme: 'grid',
       headStyles: {
-        fillColor: primaryColor,
+        fillColor: navyHeader,
         textColor: [245, 158, 11],
         fontStyle: 'bold',
-        fontSize: 9.5
+        fontSize: 8.5,
+        halign: 'left'
       },
       styles: {
-        fontSize: 9,
+        fontSize: 8.5,
         cellPadding: 3.5,
-        textColor: textDark
+        textColor: textDark,
+        lineColor: [226, 232, 240],
+        lineWidth: 0.3
       },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 24, halign: 'center' },
-        3: { cellWidth: 32, halign: 'right' },
-        4: { cellWidth: 34, halign: 'right' }
+        1: { cellWidth: 82, halign: 'left' },
+        2: { cellWidth: 28, halign: 'center' },
+        3: { cellWidth: 30, halign: 'right' },
+        4: { cellWidth: 32, halign: 'right', fontStyle: 'bold' }
       }
     });
 
+    // 4. FINANCIAL BREAKDOWN & OVERHEADS SUMMARY
     const finalY = doc.lastAutoTable.finalY + 8;
-
-    // Financial Breakdown Calculations
+    
     let itemsSubtotal = 0;
     itemsList.forEach((it) => {
       const name = it.name || it.serviceName || it.title || '';
       const isSqFt = it.unit === 'sqft' || name.toLowerCase().includes('led') || (it.serviceName || '').toLowerCase().includes('led');
       const width = Number(it.widthFt || it.ledWidth || it.width || (isSqFt ? order.ledWidthFeet : 0) || 0);
       const height = Number(it.heightFt || it.ledHeight || it.height || (isSqFt ? order.ledHeightFeet : 0) || 0);
-      const qty = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
-      const rate = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
-      itemsSubtotal += qty * rate * days;
+      const qtyVal = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
+      const rateVal = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
+      itemsSubtotal += qtyVal * rateVal * days;
     });
 
     const setupCost = Number(quotation.setupFee || quotation.setupCost || 0);
-    const logisticsCost = Number(quotation.transportFee || quotation.transportCost || quotation.logisticsCost || 0);
-    const techSupportCost = Number(quotation.technicianFee || quotation.technicianCost || quotation.techSupportCost || 0);
-    const discount = Number(quotation.discounts || quotation.discount || 0);
+    const transportCost = Number(quotation.transportFee || quotation.transportCost || quotation.logisticsCost || 0);
+    const techCost = Number(quotation.technicianFee || quotation.technicianCost || quotation.techSupportCost || 0);
+    const discountVal = Number(quotation.discounts || quotation.discount || 0);
 
-    const totalBeforeDiscount = itemsSubtotal + setupCost + logisticsCost + techSupportCost;
-    const taxableAmount = Math.max(0, totalBeforeDiscount - discount);
-    const taxAmount = taxableAmount * 0.18;
-    const grandTotal = taxableAmount + taxAmount;
+    const totalBeforeDiscount = itemsSubtotal + setupCost + transportCost + techCost;
+    const taxableBase = Math.max(0, totalBeforeDiscount - discountVal);
+    const taxGst = taxableBase * 0.18;
+    const grandTotal = Number(quotation.totalAmount || quotation.grandTotal || (taxableBase + taxGst));
 
-    // Summary Box
-    const boxHeight = (discount > 0 ? 44 : 38) + (setupCost > 0 ? 6 : 0) + (logisticsCost > 0 ? 6 : 0) + (techSupportCost > 0 ? 6 : 0);
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(120, finalY, 76, boxHeight, 2, 2, 'F');
-
-    let currentY = finalY + 6;
-
-    // 1. Items Subtotal
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(...textDark);
-    doc.text('Items Subtotal:', 125, currentY);
-    doc.text(`₹${itemsSubtotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, currentY, { align: 'right' });
-    currentY += 6;
-
-    // 2. Setup & Rigging
-    if (setupCost > 0) {
-      doc.text('Setup & Rigging:', 125, currentY);
-      doc.text(`+ ₹${setupCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, currentY, { align: 'right' });
-      currentY += 6;
-    }
-
-    // 3. Transport & Logistics
-    if (logisticsCost > 0) {
-      doc.text('Transport & Logistics:', 125, currentY);
-      doc.text(`+ ₹${logisticsCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, currentY, { align: 'right' });
-      currentY += 6;
-    }
-
-    // 4. Technician Support
-    if (techSupportCost > 0) {
-      doc.text('Technician Support:', 125, currentY);
-      doc.text(`+ ₹${techSupportCost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, currentY, { align: 'right' });
-      currentY += 6;
-    }
-
-    // 5. Discount
-    if (discount > 0) {
-      doc.setTextColor(16, 185, 129); // Green
-      doc.text('Discount:', 125, currentY);
-      doc.text(`- ₹${discount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, currentY, { align: 'right' });
-      doc.setTextColor(...textDark);
-      currentY += 6;
-    }
-
-    // 6. GST
-    doc.text('GST (18%):', 125, currentY);
-    doc.text(`+ ₹${taxAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, currentY, { align: 'right' });
-    currentY += 8;
-
-    // Line separator before Grand Total
+    // Summary Box Drawing
+    const hasDiscount = discountVal > 0;
+    const boxHeight = (hasDiscount ? 44 : 38) + (setupCost > 0 ? 5.5 : 0) + (transportCost > 0 ? 5.5 : 0) + (techCost > 0 ? 5.5 : 0);
+    
+    doc.setFillColor(...bgLight);
+    doc.roundedRect(110, finalY, 86, boxHeight, 2, 2, 'F');
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.4);
-    doc.line(122, currentY - 3, 194, currentY - 3);
+    doc.roundedRect(110, finalY, 86, boxHeight, 2, 2, 'D');
 
-    // 7. Grand Total
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...primaryColor);
-    doc.text('Grand Total:', 125, currentY);
-    doc.setTextColor(217, 119, 6); // Gold
-    doc.text(`₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, currentY, { align: 'right' });
+    let rowY = finalY + 6;
+    const renderSummaryRow = (label, valStr, isBold = false, color = textDark) => {
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...color);
+      doc.text(label, 114, rowY);
+      doc.text(valStr, 192, rowY, { align: 'right' });
+      rowY += 5.5;
+    };
 
-    // Terms & Conditions Footer
-    const footerY = finalY + boxHeight + 10;
+    renderSummaryRow('Equipment Subtotal:', `Rs. ${itemsSubtotal.toLocaleString('en-IN')}`);
+    
+    if (setupCost > 0) {
+      renderSummaryRow('Setup & Rigging Charges:', `+ Rs. ${setupCost.toLocaleString('en-IN')}`);
+    }
+    if (transportCost > 0) {
+      renderSummaryRow('Transport & Logistics:', `+ Rs. ${transportCost.toLocaleString('en-IN')}`);
+    }
+    if (techCost > 0) {
+      renderSummaryRow('Technician Support:', `+ Rs. ${techCost.toLocaleString('en-IN')}`);
+    }
+    if (discountVal > 0) {
+      renderSummaryRow('Special Discount:', `- Rs. ${discountVal.toLocaleString('en-IN')}`, false, [16, 185, 129]);
+    }
+    renderSummaryRow('GST (18% Inclusive):', `+ Rs. ${taxGst.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`);
+
+    // Divider inside summary
+    doc.setDrawColor(203, 213, 225);
+    doc.line(114, rowY - 1, 192, rowY - 1);
+    rowY += 3;
+
+    // Grand Total Row
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.setTextColor(...primaryColor);
-    doc.text('Terms & Payment Details:', 14, footerY);
+    doc.setFontSize(9.5);
+    doc.setTextColor(...navyDark);
+    doc.text('Grand Payable Total:', 114, rowY);
+    doc.setTextColor(217, 119, 6);
+    doc.text(`Rs. ${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 192, rowY, { align: 'right' });
+
+    // 5. TERMS & BANK SETTLEMENT SECTION (Bottom-Left)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...navyDark);
+    doc.text('Terms of Service & Settlement:', 14, finalY + 6);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text('1. 30% advance required to confirm crew & equipment lock.', 14, footerY + 6);
-    doc.text('2. Remaining balance payable post-event execution.', 14, footerY + 11);
-    doc.text('3. This is a computer generated quotation by Bhakti Studio.', 14, footerY + 16);
+    doc.setFontSize(7.5);
+    doc.setTextColor(...textMuted);
+    doc.text('1. 30% advance deposit confirms crew allocation and calendar booking.', 14, finalY + 12);
+    doc.text('2. 70% remaining balance due immediately upon event completion.', 14, finalY + 17);
+    doc.text('3. Power source & stage permissions must be arranged by the client venue.', 14, finalY + 22);
+    doc.text('4. Quotation valid for 7 calendar days from the date of issue.', 14, finalY + 27);
+    doc.text('5. Online payments accepted via UPI, Cards, and NetBanking.', 14, finalY + 32);
 
-    // Save and Trigger Download
+    // Footer Watermark
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text('Bhakti Studio -- Confidential & Proprietary Event Quotation', 105, 288, { align: 'center' });
+
+    // Trigger Clean Download
     doc.save(`Bhakti_Studio_Quotation_${orderCode}.pdf`);
   } catch (err) {
     console.error('PDF Generation Error:', err);
-    alert('Failed to generate PDF. Check console for details.');
+    alert('Failed to generate PDF. Check browser console.');
   }
 };
