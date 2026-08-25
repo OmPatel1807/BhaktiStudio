@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { WorkerAssignmentService } from '../services/workerAssignmentService.js';
 import { NotificationService } from '../services/notification.service.js';
+import { StorageService } from '../services/storageService.js';
 
 const prisma = new PrismaClient();
 
@@ -482,6 +483,119 @@ export const rejectWorker = async (req, res) => {
       success: true,
       message: 'Worker application rejected successfully.',
     });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * POST /api/v1/worker/orders/:orderId/upload-media
+ * WORKER: Upload site verification setup photo (BEFORE_SETUP or AFTER_SETUP)
+ */
+export const uploadExecutionMedia = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const workerId = req.user.userId;
+    const { mediaType, imageUrl, fileName = 'execution_photo.jpg' } = req.body;
+
+    if (!mediaType || !['BEFORE_SETUP', 'AFTER_SETUP'].includes(mediaType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid mediaType (BEFORE_SETUP, AFTER_SETUP) is required.',
+      });
+    }
+
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    const savedUrl = StorageService.savePhoto(imageUrl, fileName);
+
+    const media = await prisma.executionMedia.create({
+      data: {
+        orderId,
+        workerId,
+        mediaType,
+        imageUrl: savedUrl,
+      },
+      include: {
+        worker: { select: { name: true, phone: true } },
+      },
+    });
+
+    // Create Audit Log
+    await prisma.auditLog.create({
+      data: {
+        orderId,
+        actorId: workerId,
+        action: `EXECUTION_PHOTO_UPLOADED_${mediaType}`,
+        details: JSON.stringify({ mediaId: media.id, imageUrl: savedUrl }),
+      },
+    });
+
+    // Dispatch Notification
+    await NotificationService.dispatch({
+      eventType: 'EXECUTION_PHOTO_UPLOADED',
+      payload: {
+        orderId,
+        orderNumber: order.orderNumber,
+        workerId,
+        mediaType,
+        imageUrl: savedUrl,
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `${mediaType} photo uploaded successfully.`,
+      data: media,
+    });
+  } catch (error) {
+    console.error('uploadExecutionMedia error:', error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * GET /api/v1/worker/my-orders
+ * WORKER: Fetch single list of assigned orders for worker operations
+ */
+export const getWorkerMyOrders = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    let workerProfile = await prisma.workerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!workerProfile) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const assignments = await prisma.workerAssignment.findMany({
+      where: {
+        workerId: workerProfile.id,
+        status: 'ACCEPTED',
+      },
+      include: {
+        order: {
+          include: {
+            customer: { select: { name: true, phone: true, email: true } },
+            orderItems: true,
+            quotations: { orderBy: { versionNumber: 'desc' }, take: 1 },
+            executionMedia: {
+              include: {
+                worker: { select: { name: true, phone: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const orders = assignments.map(a => a.order);
+    return res.json({ success: true, data: orders });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

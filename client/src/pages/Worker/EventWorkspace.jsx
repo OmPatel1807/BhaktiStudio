@@ -68,15 +68,15 @@ export const EventWorkspace = () => {
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const res = await fetch(`/api/v1/events/${orderId}/photos`, {
+        const res = await fetch(`/api/v1/worker/orders/${orderId}/upload-media`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            photoType: activePhotoTab,
-            photoData: reader.result,
+            mediaType: activePhotoTab,
+            imageUrl: reader.result,
             fileName: file.name,
           }),
         });
@@ -106,7 +106,7 @@ export const EventWorkspace = () => {
     return <div style={{ padding: '40px', color: '#EF4444', textAlign: 'center' }}>Event not found.</div>;
   }
 
-  const photosFiltered = (order.photos || []).filter((p) => p.photoType === activePhotoTab);
+  const photosFiltered = (order.executionMedia || []).filter((p) => p.mediaType === activePhotoTab);
 
   return (
     <div
@@ -292,7 +292,7 @@ export const EventWorkspace = () => {
               }}
             >
               {uploading ? 'Uploading...' : '📷 Take / Upload Photo'}
-              <input type="file" accept="image/*" onChange={handleSimulatedPhotoUpload} style={{ display: 'none' }} />
+              <input type="file" accept="image/*" capture="environment" onChange={handleSimulatedPhotoUpload} style={{ display: 'none' }} />
             </label>
           </div>
 
@@ -350,12 +350,12 @@ export const EventWorkspace = () => {
                   }}
                 >
                   <img
-                    src={p.photoUrl}
-                    alt={p.photoType}
+                    src={p.imageUrl}
+                    alt={p.mediaType}
                     style={{ width: '100%', height: '120px', objectFit: 'cover' }}
                   />
                   <div style={{ padding: '8px', fontSize: '11px', color: '#94A3B8' }}>
-                    Uploaded by {p.uploader?.name || 'Worker'}
+                    Uploaded by {p.worker?.name || 'Worker'}
                   </div>
                 </div>
               ))}

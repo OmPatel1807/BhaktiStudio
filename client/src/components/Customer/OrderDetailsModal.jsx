@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { getAdvancePercentage } from '../../services/pricingService';
 import { rehydrateQuotation, computeEquipmentSubtotal } from '../../utils/quotationMath';
 
 export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, onMarkCompleted }) => {
+  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'proof'
+  const [zoomedImage, setZoomedImage] = useState(null);
+
   if (!isOpen || !order) return null;
 
   const rawQuotation = order.quotations?.[0];
@@ -11,6 +14,10 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
   // LOOP 40: Unified rehydration — single source of truth
   const latestQuotation = rehydrateQuotation(rawQuotation, order.orderItems);
   const equipmentTotal = computeEquipmentSubtotal(order.orderItems);
+
+  const beforePhotos = (order.executionMedia || []).filter(m => m.mediaType === 'BEFORE_SETUP');
+  const afterPhotos = (order.executionMedia || []).filter(m => m.mediaType === 'AFTER_SETUP');
+  const totalPhotosCount = beforePhotos.length + afterPhotos.length;
 
   return (
     <div
@@ -87,94 +94,232 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
           </span>
         </div>
 
-        {/* Event Info Card */}
-        <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '14px', marginBottom: '20px', fontSize: '14px' }}>
-          <div>🗓️ <strong>Event Type & Date:</strong> {order.eventType} ({formatDateTime(order.eventDate)})</div>
-          <div style={{ marginTop: '6px' }}>⏰ <strong>Timings:</strong> {order.startTime} - {order.endTime}</div>
-          <div style={{ marginTop: '6px' }}>📍 <strong>Venue Address:</strong> {order.venueAddress}</div>
-          {order.distanceKm && (
-            <div style={{ marginTop: '6px', color: '#C97A13', fontWeight: '600' }}>
-              🚗 <strong>Event Distance:</strong> {order.distanceKm} km {order.requiresCustomTransport && '(Outstation Surcharge Range)'}
-            </div>
-          )}
+        {/* Tab Buttons */}
+        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', paddingBottom: '2px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('details')}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'details' ? '2px solid #C97A13' : '2px solid transparent',
+              color: activeTab === 'details' ? '#C97A13' : 'var(--text-secondary)',
+              fontWeight: '750',
+              fontSize: '14px',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            📋 Order Breakdown
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('proof')}
+            style={{
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === 'proof' ? '2px solid #C97A13' : '2px solid transparent',
+              color: activeTab === 'proof' ? '#C97A13' : 'var(--text-secondary)',
+              fontWeight: '750',
+              fontSize: '14px',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            📸 Proof of Work
+            {totalPhotosCount > 0 && (
+              <span style={{ backgroundColor: '#C97A13', color: '#FFFFFF', fontSize: '11px', padding: '2px 6px', borderRadius: '10px', fontWeight: '800' }}>
+                {totalPhotosCount}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Selected Services Breakdown */}
-        <div style={{ marginBottom: '20px' }}>
-          <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#C97A13', margin: '0 0 10px 0' }}>
-            Selected Services & Equipment
-          </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {order.orderItems?.map((item, idx) => (
-              <div
-                key={idx}
-                style={{
-                  backgroundColor: 'var(--bg-input)',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '14px',
-                }}
-              >
-                <span>
-                  <strong style={{ color: 'var(--text-primary)' }}>{item.serviceName}</strong>
-                  {item.widthFt && ` (${item.widthFt} x ${item.heightFt} ft)`}
-                </span>
-                <span style={{ fontWeight: '700', color: '#C97A13' }}>
-                  {formatCurrency((item.finalRate || item.estimatedRate || 0) * (item.quantity || 1))}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {activeTab === 'details' ? (
+          <>
+            {/* Event Info Card */}
+            <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '14px', marginBottom: '20px', fontSize: '14px' }}>
+              <div>🗓️ <strong>Event Type & Date:</strong> {order.eventType} ({formatDateTime(order.eventDate)})</div>
+              <div style={{ marginTop: '6px' }}>⏰ <strong>Timings:</strong> {order.startTime} - {order.endTime}</div>
+              <div style={{ marginTop: '6px' }}>📍 <strong>Venue Address:</strong> {order.venueAddress}</div>
+              {order.distanceKm && (
+                <div style={{ marginTop: '6px', color: '#C97A13', fontWeight: '600' }}>
+                  🚗 <strong>Event Distance:</strong> {order.distanceKm} km {order.requiresCustomTransport && '(Outstation Surcharge Range)'}
+                </div>
+              )}
+            </div>
 
-        {/* Quotation Summary */}
-        {latestQuotation && (
-          <div style={{ backgroundColor: 'var(--bg-input)', padding: '18px', borderRadius: '14px', marginBottom: '24px' }}>
-            <h4 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 12px 0' }}>
-              Financial Quotation Breakdown (V{latestQuotation.versionNumber})
-            </h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Equipment & Services Subtotal:</span>
-              <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{formatCurrency(equipmentTotal)}</span>
+            {/* Selected Services Breakdown */}
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#C97A13', margin: '0 0 10px 0' }}>
+                Selected Services & Equipment
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {order.orderItems?.map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: 'var(--bg-input)',
+                      padding: '12px 16px',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '14px',
+                    }}
+                  >
+                    <span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{item.serviceName}</strong>
+                      {item.widthFt && ` (${item.widthFt} x ${item.heightFt} ft)`}
+                    </span>
+                    <span style={{ fontWeight: '700', color: '#C97A13' }}>
+                      {formatCurrency((item.finalRate || item.estimatedRate || 0) * (item.quantity || 1))}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-            {Number(latestQuotation.setupFee || 0) > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Setup & Rigging Charges:</span>
-                <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.setupFee)}</span>
+
+            {/* Quotation Summary */}
+            {latestQuotation && (
+              <div style={{ backgroundColor: 'var(--bg-input)', padding: '18px', borderRadius: '14px', marginBottom: '24px' }}>
+                <h4 style={{ fontSize: '15px', fontWeight: '800', color: 'var(--text-primary)', margin: '0 0 12px 0' }}>
+                  Financial Quotation Breakdown (V{latestQuotation.versionNumber})
+                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Equipment & Services Subtotal:</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{formatCurrency(equipmentTotal)}</span>
+                </div>
+                {Number(latestQuotation.setupFee || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Setup & Rigging Charges:</span>
+                    <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.setupFee)}</span>
+                  </div>
+                )}
+                {Number(latestQuotation.transportFee || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Transport & Logistics:</span>
+                    <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.transportFee)}</span>
+                  </div>
+                )}
+                {Number(latestQuotation.technicianFee || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>On-Site Technician Support:</span>
+                    <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.technicianFee)}</span>
+                  </div>
+                )}
+                {Number(latestQuotation.discounts || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px', color: '#10B981' }}>
+                    <span>Discount Applied:</span>
+                    <span>-{formatCurrency(latestQuotation.discounts)}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>GST (18%):</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{formatCurrency(latestQuotation.taxAmount)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', marginBottom: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: '800' }}>Grand Total:</span>
+                  <span style={{ fontWeight: '800', color: '#C97A13' }}>{formatCurrency(latestQuotation.totalAmount)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  <span>{getAdvancePercentage()}% Mandatory Advance Required:</span>
+                  <span style={{ fontWeight: '700', color: '#C97A13' }}>{formatCurrency(latestQuotation.advanceFee)}</span>
+                </div>
               </div>
             )}
-            {Number(latestQuotation.transportFee || 0) > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Transport & Logistics:</span>
-                <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.transportFee)}</span>
+          </>
+        ) : (
+          <div style={{ marginBottom: '24px' }}>
+            {totalPhotosCount === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: '32px', marginBottom: '10px' }}>📸</div>
+                <div style={{ fontWeight: '750', fontSize: '16px', color: 'var(--text-primary)' }}>No Execution Photos Uploaded Yet</div>
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>Once workers upload site photos, they will appear here.</div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10B981', padding: '8px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '700', marginBottom: '20px', display: 'inline-block' }}>
+                  Setup Verified ({beforePhotos.length} Before, {afterPhotos.length} After Photos Uploaded)
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  {/* Before Setup Column */}
+                  <div>
+                    <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                      ⏮️ Before Setup ({beforePhotos.length})
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {beforePhotos.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', border: '1px dashed var(--border-color)', borderRadius: '10px', fontSize: '12px' }}>
+                          No before photos uploaded.
+                        </div>
+                      ) : (
+                        beforePhotos.map((photo) => (
+                          <div
+                            key={photo.id}
+                            onClick={() => setZoomedImage(photo.imageUrl)}
+                            style={{
+                              backgroundColor: 'var(--bg-input)',
+                              borderRadius: '12px',
+                              border: '1px solid var(--border-color)',
+                              overflow: 'hidden',
+                              cursor: 'zoom-in',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <img src={photo.imageUrl} alt="Before Setup" style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                            <div style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                              <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>👤 {photo.worker?.name || 'Worker'}</div>
+                              <div style={{ marginTop: '2px' }}>🕒 {formatDateTime(photo.createdAt)}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* After Setup Column */}
+                  <div>
+                    <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#10B981', textTransform: 'uppercase', marginBottom: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                      ⏭️ After Setup ({afterPhotos.length})
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {afterPhotos.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', border: '1px dashed var(--border-color)', borderRadius: '10px', fontSize: '12px' }}>
+                          No after photos uploaded.
+                        </div>
+                      ) : (
+                        afterPhotos.map((photo) => (
+                          <div
+                            key={photo.id}
+                            onClick={() => setZoomedImage(photo.imageUrl)}
+                            style={{
+                              backgroundColor: 'var(--bg-input)',
+                              borderRadius: '12px',
+                              border: '1px solid var(--border-color)',
+                              overflow: 'hidden',
+                              cursor: 'zoom-in',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <img src={photo.imageUrl} alt="After Setup" style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                            <div style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                              <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>👤 {photo.worker?.name || 'Worker'}</div>
+                              <div style={{ marginTop: '2px' }}>🕒 {formatDateTime(photo.createdAt)}</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-            {Number(latestQuotation.technicianFee || 0) > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>On-Site Technician Support:</span>
-                <span style={{ color: 'var(--text-primary)' }}>+{formatCurrency(latestQuotation.technicianFee)}</span>
-              </div>
-            )}
-            {Number(latestQuotation.discounts || 0) > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px', color: '#10B981' }}>
-                <span>Discount Applied:</span>
-                <span>-{formatCurrency(latestQuotation.discounts)}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>GST (18%):</span>
-              <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{formatCurrency(latestQuotation.taxAmount)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', marginBottom: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: '800' }}>Grand Total:</span>
-              <span style={{ fontWeight: '800', color: '#C97A13' }}>{formatCurrency(latestQuotation.totalAmount)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              <span>{getAdvancePercentage()}% Mandatory Advance Required:</span>
-              <span style={{ fontWeight: '700', color: '#C97A13' }}>{formatCurrency(latestQuotation.advanceFee)}</span>
-            </div>
           </div>
         )}
 
@@ -245,6 +390,42 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
           )}
         </div>
       </div>
+
+      {/* Zoom Modal Overlay */}
+      {zoomedImage && (
+        <div
+          onClick={() => setZoomedImage(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            cursor: 'zoom-out',
+          }}
+        >
+          <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '90%' }}>
+            <img src={zoomedImage} alt="Zoomed View" style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '90vh', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} />
+            <button
+              onClick={() => setZoomedImage(null)}
+              style={{
+                position: 'absolute',
+                top: '-40px',
+                right: '0',
+                backgroundColor: 'transparent',
+                border: 'none',
+                color: '#FFFFFF',
+                fontSize: '30px',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

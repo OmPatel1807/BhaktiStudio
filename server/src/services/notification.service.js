@@ -186,6 +186,16 @@ export class NotificationService {
             });
             break;
 
+          case 'EXECUTION_PHOTO_UPLOADED':
+            await InAppProvider.send({
+              userId: 'admin',
+              title: '📸 Site Photo Uploaded',
+              message: `Worker uploaded a ${payload.mediaType} photo for Order #${payload.orderNumber}.`,
+              actionUrl: `/admin/orders`,
+              type: 'EXECUTION_PHOTO_UPLOADED',
+            });
+            break;
+
           default:
             console.log(`[NotificationService]: Unhandled event type '${eventType}'`);
         }

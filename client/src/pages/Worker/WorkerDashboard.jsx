@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { formatDateTime } from '../../utils/formatters';
 
 export const WorkerDashboard = () => {
+  const navigate = useNavigate();
   const { token, user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -285,9 +287,29 @@ export const WorkerDashboard = () => {
                       </>
                     )}
                     {asg.status === 'ACCEPTED' && (
-                      <span style={{ fontSize: '13px', color: '#10B981', fontWeight: '700', textAlign: 'center' }}>
-                        ✓ Job Confirmed
-                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '13px', color: '#10B981', fontWeight: '700', textAlign: 'center' }}>
+                          ✓ Job Confirmed
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/worker/workspace/${ord.id}`)}
+                          style={{
+                            backgroundColor: '#C39B5A',
+                            color: '#0F172A',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: '10px',
+                            fontWeight: '850',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            width: '100%',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          📸 Site photos
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

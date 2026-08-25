@@ -340,6 +340,11 @@ export const getAllOrders = async (req, res) => {
             },
           },
         },
+        executionMedia: {
+          include: {
+            worker: { select: { name: true, phone: true } },
+          },
+        },
       },
     });
 
@@ -374,6 +379,11 @@ export const getOrderById = async (req, res) => {
           },
         },
         payments: true,
+        executionMedia: {
+          include: {
+            worker: { select: { name: true, phone: true } },
+          },
+        },
       },
     });
 

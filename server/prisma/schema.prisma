@@ -73,6 +73,7 @@ model User {
   orders           Order[]          @relation("CustomerOrders")
   uploadedPhotos   EventPhoto[]     @relation("PhotoUploader")
   auditLogs        AuditLog[]       @relation("AuditActor")
+  executionMedia   ExecutionMedia[]
 }
 
 model CustomerProfile {
@@ -164,6 +165,7 @@ model Order {
   photos         EventPhoto[]
   payments       PaymentRecord[]
   auditLogs      AuditLog[]
+  executionMedia ExecutionMedia[]
 }
 
 model OrderItem {
@@ -243,4 +245,16 @@ model AuditLog {
   action    String
   details   String?
   createdAt DateTime @default(now())
+}
+
+model ExecutionMedia {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  workerId    String
+  worker      User     @relation(fields: [workerId], references: [id])
+  mediaType   String   // "BEFORE_SETUP" | "AFTER_SETUP"
+  imageUrl    String   // Base64 string or Cloud storage URL
+  caption     String?
+  createdAt   DateTime @default(now())
 }

@@ -63,6 +63,7 @@ router.use('/settings', settingsRoutes);
 router.use('/orders', orderRoutes);
 router.use('/quotations', quotationRoutes);
 router.use('/workers', workerRoutes);
+router.use('/worker', workerRoutes);
 router.use('/assignments', assignmentRoutes);
 router.use('/events', eventRoutes);
 router.use('/payments', paymentRoutes);

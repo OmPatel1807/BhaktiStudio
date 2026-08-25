@@ -10,6 +10,8 @@ import {
   getPendingWorkers,
   approveWorker,
   rejectWorker,
+  uploadExecutionMedia,
+  getWorkerMyOrders,
 } from '../controllers/worker.controller.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/rbac.middleware.js';
@@ -18,6 +20,10 @@ const router = Router();
 
 // PUBLIC Route: Self-Registration Application
 router.post('/apply', applyWorker);
+
+// Worker Operations Proof of Execution Upload
+router.get('/my-orders', authenticateToken, getWorkerMyOrders);
+router.post('/orders/:orderId/upload-media', authenticateToken, uploadExecutionMedia);
 
 // Admin Routes for Pending Approvals Queue
 router.get('/pending', authenticateToken, authorizeRoles('ADMIN'), getPendingWorkers);
