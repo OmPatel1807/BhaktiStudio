@@ -1,204 +1,145 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
-export const generateQuotationPdf = (order, quotation) => {
-  const doc = new jsPDF();
+export const downloadQuotationPdf = (order) => {
+  try {
+    if (!order) return;
 
-  // Branding colors
-  const primaryColor = [17, 26, 46]; // Dark Blue #111A2E
-  const accentColor = [245, 158, 11]; // Gold #F59E0B
-  const textColor = [51, 65, 85]; // Dark Slate
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
 
-  // 1. Header with luxury theme background banner
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, 210, 40, 'F');
+    const primaryColor = [17, 26, 46]; // #111A2E Navy
+    const goldColor = [245, 158, 11];  // #F59E0B Gold
+    const textDark = [33, 37, 41];
 
-  // Title text in Gold
-  doc.setTextColor(...accentColor);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.text('BHAKTI STUDIO', 15, 20);
+    // Header Background
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, 210, 42, 'F');
 
-  // Subtitle
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text('PREMIUM EVENT PRODUCTION & LED RENTALS', 15, 28);
+    // Studio Branding
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(245, 158, 11);
+    doc.text('BHAKTI STUDIO', 14, 20);
 
-  doc.setFontSize(14);
-  doc.setTextColor(...accentColor);
-  doc.setFont('helvetica', 'bold');
-  doc.text('OFFICIAL QUOTATION', 140, 25);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(203, 213, 225);
+    doc.text('Event Production & Cinematography Services', 14, 27);
+    doc.text('Surat, Gujarat, India | contact@bhaktistudio.com', 14, 33);
 
-  // Gold accent bar separator
-  doc.setFillColor(...accentColor);
-  doc.rect(0, 40, 210, 3, 'F');
+    // Document Title Badge (Right-aligned)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text('OFFICIAL QUOTATION', 196, 20, { align: 'right' });
 
-  // 2. Metadata Section
-  doc.setTextColor(...primaryColor);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.text('QUOTATION DETAILS', 15, 55);
-  doc.setLineWidth(0.5);
-  doc.setDrawColor(226, 232, 240);
-  doc.line(15, 57, 195, 57);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(203, 213, 225);
+    const orderCode = order.orderNumber || `BS-2026-${String(order.id || '00001').padStart(5, '0')}`;
+    doc.text(`Quotation #: ${orderCode}`, 196, 27, { align: 'right' });
+    doc.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, 196, 33, { align: 'right' });
 
-  doc.setTextColor(...textColor);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+    // Client & Event Information Section
+    doc.setTextColor(...textDark);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('CLIENT & EVENT DETAILS', 14, 52);
 
-  // Format date helper
-  const formatDate = (dateStr) => {
-    try {
-      if (!dateStr) return 'TBD';
-      return new Date(dateStr).toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-    } catch (e) {
-      return dateStr || 'TBD';
-    }
-  };
+    doc.setDrawColor(245, 158, 11);
+    doc.setLineWidth(0.6);
+    doc.line(14, 54, 70, 54);
 
-  // Left Column
-  doc.text(`Quotation ID: QT-${order.orderNumber || 'BS-2026-00001'}`, 15, 65);
-  doc.text(`Client Name: ${order.customer?.name || order.customerName || 'Valued Customer'}`, 15, 72);
-  doc.text(`Email: ${order.customer?.email || 'N/A'}`, 15, 79);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.text(`Event Type: ${order.eventType || 'Event Production'}`, 14, 61);
+    doc.text(`Venue / Location: ${order.venueAddress || 'Surat'}`, 14, 67);
+    doc.text(`Event Date: ${order.eventDate ? new Date(order.eventDate).toLocaleDateString('en-IN') : 'Scheduled Date'}`, 14, 73);
 
-  // Right Column
-  doc.text(`Event Type: ${order.eventType || 'N/A'}`, 120, 65);
-  doc.text(`Event Date: ${formatDate(order.eventDate)}`, 120, 72);
-  doc.text(`Venue Address: ${order.venueAddress || 'N/A'}`, 120, 79);
+    // Parse Items Table
+    const quotation = order.quotations?.[0] || order.quotation || {};
+    const itemsList = quotation.items || order.orderItems || order.items || [
+      { name: order.eventType || 'Event Setup & Coverage', quantity: 1, rate: order.grandTotal || order.totalAmount || 43660 }
+    ];
 
-  // 3. Line Items Table using autoTable
-  const items = order.orderItems || order.items || order.services || [];
-  const tableRows = [];
+    const tableRows = itemsList.map((it, idx) => {
+      const name = it.name || it.serviceName || it.title || `Service Item #${idx + 1}`;
+      const qty = Number(it.quantity || it.qty || 1);
+      const rate = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
+      const total = Number(it.total || it.amount || (qty * rate));
+      return [idx + 1, name, qty, `₹${rate.toLocaleString('en-IN')}`, `₹${total.toLocaleString('en-IN')}`];
+    });
 
-  // Equipment / Service line items
-  items.forEach((item, index) => {
-    const name = item.serviceName || item.name || item.service?.name || 'Service Item';
-    const qty = Number(item.quantity) || 1;
-    const rate = Number(item.finalRate || item.rate || item.estimatedRate || item.baseRate || 0);
-    const days = Number(item.days || 1);
-    const itemTotal = qty * rate * days;
+    autoTable(doc, {
+      startY: 82,
+      head: [['#', 'Item / Service Description', 'Qty', 'Unit Rate (₹)', 'Amount (₹)']],
+      body: tableRows,
+      theme: 'grid',
+      headStyles: {
+        fillColor: primaryColor,
+        textColor: [245, 158, 11],
+        fontStyle: 'bold',
+        fontSize: 9.5
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3.5,
+        textColor: textDark
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 16, halign: 'center' },
+        3: { cellWidth: 32, halign: 'right' },
+        4: { cellWidth: 34, halign: 'right' }
+      }
+    });
 
-    tableRows.push([
-      `${index + 1}. ${name}${days > 1 ? ` (${days} days)` : ''}`,
-      qty,
-      `INR ${rate.toLocaleString('en-IN')}`,
-      `INR ${itemTotal.toLocaleString('en-IN')}`
-    ]);
-  });
+    const finalY = doc.lastAutoTable.finalY + 8;
+    const finalAmount = Number(quotation.grandTotal || quotation.totalAmount || order.grandTotal || order.totalAmount || 0);
+    const subTotal = Number(quotation.subTotal || quotation.subtotal || (finalAmount / 1.18));
+    const taxAmount = Number(quotation.taxAmount || (finalAmount - subTotal));
 
-  // Additional Fees as rows if present
-  if (quotation && Number(quotation.setupFee) > 0) {
-    tableRows.push(['Setup & Rigging Charges', '-', '-', `INR ${Number(quotation.setupFee).toLocaleString('en-IN')}`]);
+    // Summary Box
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(120, finalY, 76, 32, 2, 2, 'F');
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Subtotal:', 125, finalY + 8);
+    doc.text(`₹${subTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, finalY + 8, { align: 'right' });
+
+    doc.text('GST (18%):', 125, finalY + 15);
+    doc.text(`₹${taxAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 190, finalY + 15, { align: 'right' });
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.setTextColor(...primaryColor);
+    doc.text('Grand Total:', 125, finalY + 25);
+    doc.setTextColor(217, 119, 6);
+    doc.text(`₹${finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, finalY + 25, { align: 'right' });
+
+    // Terms & Conditions Footer
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...primaryColor);
+    doc.text('Terms & Payment Details:', 14, finalY + 42);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('1. 30% advance required to confirm crew & equipment lock.', 14, finalY + 48);
+    doc.text('2. Remaining balance payable post-event execution.', 14, finalY + 53);
+    doc.text('3. This is a computer generated quotation by Bhakti Studio.', 14, finalY + 58);
+
+    // Save and Trigger Download
+    doc.save(`Bhakti_Studio_Quotation_${orderCode}.pdf`);
+  } catch (err) {
+    console.error('PDF Generation Error:', err);
+    alert('Failed to generate PDF. Check console for details.');
   }
-  if (quotation && Number(quotation.transportFee) > 0) {
-    tableRows.push(['Transport & Logistics', '-', '-', `INR ${Number(quotation.transportFee).toLocaleString('en-IN')}`]);
-  }
-  if (quotation && Number(quotation.technicianFee) > 0) {
-    tableRows.push(['Technician Support', '-', '-', `INR ${Number(quotation.technicianFee).toLocaleString('en-IN')}`]);
-  }
-
-  doc.autoTable({
-    startY: 90,
-    head: [['Description', 'Qty', 'Unit Rate', 'Amount']],
-    body: tableRows,
-    headStyles: {
-      fillColor: primaryColor,
-      textColor: [255, 255, 255],
-      fontSize: 10,
-      fontStyle: 'bold'
-    },
-    bodyStyles: {
-      textColor: textColor,
-      fontSize: 9
-    },
-    alternateRowStyles: {
-      fillColor: [248, 250, 252]
-    },
-    columnStyles: {
-      0: { cellWidth: 100 },
-      1: { halign: 'center', cellWidth: 20 },
-      2: { halign: 'right', cellWidth: 35 },
-      3: { halign: 'right', cellWidth: 30 }
-    },
-    margin: { left: 15, right: 15 }
-  });
-
-  // Get start Y for the summary block
-  let finalY = doc.previousAutoTable.finalY + 12;
-
-  // Check if we need to add a page to fit the summary and terms
-  if (finalY > 210) {
-    doc.addPage();
-    finalY = 20;
-  }
-
-  // 4. Summary Box (Right aligned)
-  const summaryX = 120;
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...primaryColor);
-  doc.setFontSize(10);
-  doc.text('SUMMARY OF CHARGES', summaryX, finalY);
-  doc.setLineWidth(0.5);
-  doc.line(summaryX, finalY + 2, 195, finalY + 2);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...textColor);
-  doc.setFontSize(9);
-
-  let currentY = finalY + 8;
-  const subtotal = Number(quotation?.subtotal || order.grandTotal || 0);
-  doc.text('Gross Subtotal:', summaryX, currentY);
-  doc.text(`INR ${subtotal.toLocaleString('en-IN')}`, 195, currentY, { align: 'right' });
-
-  if (quotation && Number(quotation.discounts) > 0) {
-    currentY += 6;
-    doc.text('Discount Applied:', summaryX, currentY);
-    doc.text(`- INR ${Number(quotation.discounts).toLocaleString('en-IN')}`, 195, currentY, { align: 'right' });
-  }
-
-  const taxAmount = Number(quotation?.taxAmount || 0);
-  currentY += 6;
-  doc.text('GST (18%):', summaryX, currentY);
-  doc.text(`INR ${taxAmount.toLocaleString('en-IN')}`, 195, currentY, { align: 'right' });
-
-  const totalAmount = Number(quotation?.totalAmount || order.grandTotal || 0);
-  currentY += 8;
-  doc.setFillColor(...primaryColor);
-  doc.rect(summaryX, currentY - 5, 75, 8, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Total Payable Amount:', summaryX + 2, currentY);
-  doc.text(`INR ${totalAmount.toLocaleString('en-IN')}`, 195, currentY, { align: 'right' });
-
-  // 5. Terms & Bank details (Left aligned)
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...primaryColor);
-  doc.text('PAYMENT TERMS & BANK DETAILS', 15, finalY);
-  doc.setLineWidth(0.5);
-  doc.line(15, finalY + 2, 105, finalY + 2);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...textColor);
-  doc.setFontSize(8.5);
-
-  let termsY = finalY + 8;
-  doc.text('• Advance required to confirm: 30% of total.', 15, termsY);
-  doc.text('• Balance payment due on setup completion.', 15, termsY + 5);
-  doc.text('• Bank Name: HDFC Bank Ltd', 15, termsY + 12);
-  doc.text('• Account Name: Bhakti Studio Production', 15, termsY + 17);
-  doc.text('• A/C Number: 50200088921822', 15, termsY + 22);
-  doc.text('• IFSC Code: HDFC0000180', 15, termsY + 27);
-
-  // Footer note
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(...textColor);
-  doc.setFontSize(8);
-  doc.text('Thank you for choosing Bhakti Studio! This is a system-generated quotation.', 15, 282);
-
-  doc.save(`Quotation_Order_${order.orderNumber || 'BS'}.pdf`);
 };

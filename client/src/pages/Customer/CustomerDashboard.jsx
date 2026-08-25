@@ -5,7 +5,7 @@ import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { resolveOrderDisplayTotal } from '../../utils/quotationMath';
 import { OrderDetailsModal } from '../../components/Customer/OrderDetailsModal';
 import { PaymentModal } from '../../components/Customer/PaymentModal';
-import { generateQuotationPdf } from '../../utils/generateQuotationPdf';
+import { downloadQuotationPdf } from '../../utils/generateQuotationPdf';
 
 export const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -306,8 +306,7 @@ export const CustomerDashboard = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              const latestQuotation = ord.quotations?.[0];
-                              generateQuotationPdf(ord, latestQuotation);
+                              downloadQuotationPdf(ord);
                             }}
                             style={{
                               width: '100%',
