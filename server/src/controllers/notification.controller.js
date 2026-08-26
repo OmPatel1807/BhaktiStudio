@@ -12,21 +12,29 @@ export const getUserNotifications = async (req, res) => {
 
     const notifications = await prisma.auditLog.findMany({
       where: {
-        userId,
+        actorId: userId,
         action: { startsWith: 'NOTIFICATION_' },
       },
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
 
-    const formatted = notifications.map((n) => ({
-      id: n.id,
-      title: n.newValue?.title || n.action,
-      message: n.newValue?.message || '',
-      actionUrl: n.newValue?.actionUrl || '#',
-      isRead: Boolean(n.newValue?.isRead),
-      createdAt: n.createdAt,
-    }));
+    const formatted = notifications.map((n) => {
+      let detailsObj = {};
+      try {
+        detailsObj = JSON.parse(n.details || '{}');
+      } catch (err) {
+        detailsObj = {};
+      }
+      return {
+        id: n.id,
+        title: detailsObj.title || n.action,
+        message: detailsObj.message || '',
+        actionUrl: detailsObj.actionUrl || '#',
+        isRead: Boolean(detailsObj.isRead),
+        createdAt: n.createdAt,
+      };
+    });
 
     return res.json({ success: true, data: formatted });
   } catch (error) {
@@ -45,13 +53,18 @@ export const markAsRead = async (req, res) => {
     const notif = await prisma.auditLog.findUnique({ where: { id } });
     if (!notif) return res.status(404).json({ success: false, message: 'Notification not found.' });
 
+    let detailsObj = {};
+    try {
+      detailsObj = JSON.parse(notif.details || '{}');
+    } catch (err) {
+      detailsObj = {};
+    }
+    detailsObj.isRead = true;
+
     const updated = await prisma.auditLog.update({
       where: { id },
       data: {
-        newValue: {
-          ...notif.newValue,
-          isRead: true,
-        },
+        details: JSON.stringify(detailsObj),
       },
     });
 
@@ -71,19 +84,24 @@ export const markAllAsRead = async (req, res) => {
 
     const userNotifs = await prisma.auditLog.findMany({
       where: {
-        userId,
+        actorId: userId,
         action: { startsWith: 'NOTIFICATION_' },
       },
     });
 
     for (const n of userNotifs) {
+      let detailsObj = {};
+      try {
+        detailsObj = JSON.parse(n.details || '{}');
+      } catch (err) {
+        detailsObj = {};
+      }
+      detailsObj.isRead = true;
+
       await prisma.auditLog.update({
         where: { id: n.id },
         data: {
-          newValue: {
-            ...n.newValue,
-            isRead: true,
-          },
+          details: JSON.stringify(detailsObj),
         },
       });
     }

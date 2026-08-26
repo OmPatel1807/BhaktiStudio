@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { StorageService } from '../services/storageService.js';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 const prisma = new PrismaClient();
 
@@ -43,9 +44,9 @@ export const uploadSitePhoto = async (req, res) => {
     await prisma.auditLog.create({
       data: {
         orderId,
-        userId,
+        actorId: userId,
         action: `SITE_PHOTO_UPLOADED_${photoType}`,
-        newValue: { photoId: eventPhoto.id, photoUrl },
+        details: JSON.stringify({ photoId: eventPhoto.id, photoUrl }),
       },
     });
 
@@ -106,10 +107,9 @@ export const updateExecutionStatus = async (req, res) => {
     await prisma.auditLog.create({
       data: {
         orderId,
-        userId,
+        actorId: userId,
         action: `EXECUTION_MILESTONE_${nextStatus}`,
-        oldValue: { previousStatus: order.status },
-        newValue: { newStatus: nextStatus },
+        details: JSON.stringify({ previousStatus: order.status, newStatus: nextStatus }),
       },
     });
 
@@ -152,6 +152,17 @@ export const getEventByQrToken = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Invalid or expired QR Code token.' });
+    }
+
+    // Log QR check-in event scan
+    if (req.user) {
+      await logAuditEvent({
+        userId: req.user.userId,
+        orderId: order.id,
+        action: 'QR_CODE_SCANNED',
+        category: 'CREW_OPERATIONS',
+        details: { orderNumber: order.orderNumber, qrCodeToken },
+      });
     }
 
     return res.json({ success: true, data: order });

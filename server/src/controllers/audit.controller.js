@@ -19,8 +19,8 @@ export const getAuditLogs = async (req, res) => {
     if (search) {
       where.OR = [
         { action: { contains: search, mode: 'insensitive' } },
-        { user: { name: { contains: search, mode: 'insensitive' } } },
-        { user: { email: { contains: search, mode: 'insensitive' } } },
+        { actor: { name: { contains: search, mode: 'insensitive' } } },
+        { actor: { email: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -31,17 +31,22 @@ export const getAuditLogs = async (req, res) => {
         take: Number(limit),
         skip,
         include: {
-          user: { select: { id: true, name: true, email: true, role: true } },
-          order: { select: { orderNumber: true, eventType: true } },
+          actor: { select: { id: true, name: true, email: true, role: true } },
+          order: { select: { id: true, orderNumber: true, eventType: true } },
         },
       }),
       prisma.auditLog.count({ where }),
     ]);
 
+    const mappedLogs = logs.map(log => ({
+      ...log,
+      user: log.actor
+    }));
+
     return res.json({
       success: true,
       data: {
-        logs,
+        logs: mappedLogs,
         pagination: {
           total,
           page: Number(page),

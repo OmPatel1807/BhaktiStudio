@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { NotificationService } from '../services/notification.service.js';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 const prisma = new PrismaClient();
 
@@ -30,6 +31,14 @@ export const promoteUserToAdmin = async (req, res) => {
         status: 'APPROVED',
         isActive: true,
       }
+    });
+
+    // Create Audit Log for role adjustment
+    await logAuditEvent({
+      userId: req.user?.userId || targetUser.id,
+      action: 'ADMIN_ROLE_PROMOTED',
+      category: 'USER_MANAGEMENT',
+      details: { promotedUserId: targetUser.id, promotedEmail: targetEmail },
     });
 
     return res.json({
@@ -166,6 +175,23 @@ export const updateOrderQuotation = async (req, res) => {
       },
     });
 
+    // Create Audit Log for quotation version update
+    await logAuditEvent({
+      userId: req.user.userId,
+      orderId,
+      action: 'QUOTATION_EDITED',
+      category: 'FINANCIAL',
+      details: {
+        versionNumber: nextVersionNumber,
+        oldTotal: latestVersion?.totalAmount || 0,
+        newTotal: grandTotal,
+        setupFee: round2(finalSetupFee),
+        transportFee: round2(finalTransportFee),
+        technicianFee: round2(finalTechnicianFee),
+        discount: discountAmount,
+      },
+    });
+
     // Update order status to QUOTATION_SENT
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
@@ -231,12 +257,12 @@ export const createWorkerPayout = async (req, res) => {
     });
 
     // Create Audit Log
-    await prisma.auditLog.create({
-      data: {
-        actorId: req.user.userId,
-        action: 'WORKER_PAYOUT_SETTLED',
-        details: JSON.stringify({ payoutId: payout.id, workerName: worker.name, totalAmount: totalVal }),
-      },
+    await logAuditEvent({
+      userId: req.user.userId,
+      orderId: orderId || null,
+      action: 'WORKER_PAYOUT_SETTLED',
+      category: 'FINANCIAL',
+      details: { payoutId: payout.id, workerName: worker.name || worker.email, totalAmount: totalVal },
     });
 
     // Dispatch Notification

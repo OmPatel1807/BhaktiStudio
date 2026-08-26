@@ -1,6 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 const prisma = new PrismaClient();
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -206,6 +207,14 @@ export class AuthService {
     }
 
     const token = this.generateJwtToken(user, requestedRole);
+
+    // Create Audit Log for successful login
+    await logAuditEvent({
+      userId: user.id,
+      action: 'USER_LOGIN',
+      category: 'AUTH',
+      details: { email: user.email, sessionRole: requestedRole || user.role },
+    });
 
     return {
       user: {

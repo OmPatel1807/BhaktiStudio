@@ -98,12 +98,12 @@ export const createAssignments = async (req, res) => {
       await tx.auditLog.create({
         data: {
           orderId,
-          userId: adminId,
+          actorId: adminId,
           action: 'WORKERS_ASSIGNED',
-          newValue: {
+          details: JSON.stringify({
             assignedWorkerCount: createdAssignments.length,
             warnings: conflictWarnings,
-          },
+          }),
         },
       });
 
@@ -176,9 +176,9 @@ export const respondToAssignment = async (req, res) => {
     await prisma.auditLog.create({
       data: {
         orderId: assignment.orderId,
-        userId,
+        actorId: userId,
         action: `WORKER_ASSIGNMENT_${nextStatus}`,
-        newValue: { assignmentId: id, workerName: assignment.workerProfile.user.name, rejectionReason },
+        details: JSON.stringify({ assignmentId: id, workerName: assignment.workerProfile.user.name, rejectionReason }),
       },
     });
 

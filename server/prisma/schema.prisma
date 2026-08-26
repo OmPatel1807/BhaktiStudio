@@ -243,7 +243,7 @@ model AuditLog {
   orderId   String?
   order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   actorId   String
-  actor     User     @relation("AuditActor", fields: [actorId], references: [id])
+  actor     User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
   action    String
   details   String?
   createdAt DateTime @default(now())
