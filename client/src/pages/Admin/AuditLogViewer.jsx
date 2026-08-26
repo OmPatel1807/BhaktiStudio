@@ -190,43 +190,100 @@ export const AuditLogViewer = () => {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: '#EF4444', fontWeight: '700' }}>Old Value (Previous State):</label>
-                <pre
-                  style={{
-                    backgroundColor: '#0F172A',
-                    padding: '12px',
-                    borderRadius: '10px',
-                    fontSize: '11px',
-                    color: '#F8FAFC',
-                    maxHeight: '240px',
-                    overflowY: 'auto',
-                    marginTop: '6px',
-                  }}
-                >
-                  {JSON.stringify(selectedLogDiff.oldValue || {}, null, 2)}
-                </pre>
-              </div>
+            {(() => {
+              let detailsObj = {};
+              try {
+                detailsObj = JSON.parse(selectedLogDiff.details || '{}');
+              } catch (e) {
+                detailsObj = { rawText: selectedLogDiff.details };
+              }
 
-              <div>
-                <label style={{ fontSize: '12px', color: '#10B981', fontWeight: '700' }}>New Value (Updated State):</label>
-                <pre
-                  style={{
-                    backgroundColor: '#0F172A',
-                    padding: '12px',
-                    borderRadius: '10px',
-                    fontSize: '11px',
-                    color: '#F8FAFC',
-                    maxHeight: '240px',
-                    overflowY: 'auto',
-                    marginTop: '6px',
-                  }}
-                >
-                  {JSON.stringify(selectedLogDiff.newValue || {}, null, 2)}
-                </pre>
-              </div>
-            </div>
+              const previousState = detailsObj.previous || detailsObj.oldValue || null;
+              const updatedState = detailsObj.updated || detailsObj.newValue || null;
+              const delta = detailsObj.delta || null;
+              const isDiffFormat = previousState !== null || updatedState !== null || delta !== null;
+
+              if (!isDiffFormat) {
+                return (
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ fontSize: '12px', color: '#F59E0B', fontWeight: '700' }}>Event Details Payload:</label>
+                    <pre
+                      style={{
+                        backgroundColor: '#0F172A',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        fontSize: '11px',
+                        color: '#F8FAFC',
+                        maxHeight: '340px',
+                        overflowY: 'auto',
+                        marginTop: '6px',
+                      }}
+                    >
+                      {JSON.stringify(detailsObj, null, 2)}
+                    </pre>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Dynamic Delta Table */}
+                  {delta && Object.keys(delta).length > 0 && (
+                    <div style={{ backgroundColor: '#0F172A', padding: '16px', borderRadius: '12px', border: '1px solid #334155', maxHeight: '200px', overflowY: 'auto' }}>
+                      <label style={{ fontSize: '12px', color: '#3B82F6', fontWeight: '800' }}>Detected Changes (Field-Level Delta):</label>
+                      <div style={{ marginTop: '8px', fontSize: '11px' }}>
+                        {Object.entries(delta).map(([field, values]) => (
+                          <div key={field} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 1fr', gap: '12px', padding: '6px 0', borderBottom: '1px solid #1E293B' }}>
+                            <span style={{ fontWeight: '700', color: '#94A3B8', wordBreak: 'break-all' }}>{field}</span>
+                            <span style={{ color: '#EF4444', textDecoration: values.old ? 'line-through' : 'none', wordBreak: 'break-all' }}>{String(values.old ?? 'None')}</span>
+                            <span style={{ color: '#10B981', fontWeight: '700', wordBreak: 'break-all' }}>{String(values.new ?? 'None')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Previous vs Updated State Codeblocks */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#EF4444', fontWeight: '700' }}>Old Value (Previous State):</label>
+                      <pre
+                        style={{
+                          backgroundColor: '#0F172A',
+                          padding: '12px',
+                          borderRadius: '10px',
+                          fontSize: '11px',
+                          color: '#F8FAFC',
+                          maxHeight: '240px',
+                          overflowY: 'auto',
+                          marginTop: '6px',
+                        }}
+                      >
+                        {JSON.stringify(previousState || {}, null, 2)}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#10B981', fontWeight: '700' }}>New Value (Updated State):</label>
+                      <pre
+                        style={{
+                          backgroundColor: '#0F172A',
+                          padding: '12px',
+                          borderRadius: '10px',
+                          fontSize: '11px',
+                          color: '#F8FAFC',
+                          maxHeight: '240px',
+                          overflowY: 'auto',
+                          marginTop: '6px',
+                        }}
+                      >
+                        {JSON.stringify(updatedState || {}, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button

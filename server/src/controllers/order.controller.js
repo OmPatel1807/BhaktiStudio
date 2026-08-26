@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingEngineService } from '../services/pricingEngine.js';
 import { NotificationService } from '../services/notification.service.js';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 const prisma = new PrismaClient();
 
@@ -485,50 +486,61 @@ export const assignWorkersToOrder = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { status } = req.body;
-    const adminId = req.user?.userId;
+    const { status: newStatus } = req.body;
 
-    if (!status) {
+    if (!newStatus) {
       return res.status(400).json({ success: false, message: 'New status is required.' });
     }
 
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found.' });
-    }
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { assignments: true }
+    });
 
-    const oldStatus = order.status;
+    if (!existingOrder) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
 
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
-      data: { status },
+      data: { status: newStatus },
       include: {
         customer: { select: { id: true, name: true, email: true, phone: true } },
         orderItems: true,
         quotations: { orderBy: { versionNumber: 'desc' }, take: 1 },
-      },
+      }
     });
 
-    // Create Audit Log
-    if (adminId) {
-      await prisma.auditLog.create({
-        data: {
-          orderId,
-          actorId: adminId,
-          action: 'STATUS_UPDATED',
-          details: JSON.stringify({
-            oldStatus,
-            newStatus: status,
-            message: status === 'COMPLETED' ? 'Event completed by Admin' : `Order status changed from ${oldStatus} to ${status}`,
-          }),
+    // Purely dynamic audit log
+    await logAuditEvent({
+      userId: req.user?.userId || null,
+      orderId: updatedOrder.id,
+      action: 'STATUS_UPDATED',
+      category: 'ORDER',
+      details: {
+        previous: {
+          status: existingOrder.status,
+          totalAmount: existingOrder.grandTotal || existingOrder.totalAmount || 0,
+          workersAssignedCount: existingOrder.assignments?.length || 0
         },
-      });
-    }
+        updated: {
+          status: updatedOrder.status,
+          totalAmount: updatedOrder.grandTotal || updatedOrder.totalAmount || 0,
+          workersAssignedCount: existingOrder.assignments?.length || 0
+        },
+        metadata: {
+          orderId: updatedOrder.id,
+          orderRef: updatedOrder.orderNumber || `ORD-${updatedOrder.id.slice(0, 8)}`,
+          updatedBy: req.user?.name || req.user?.email || 'Authenticated User'
+        }
+      },
+      ipAddress: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip
+    });
 
-    return res.json({
+    return res.status(200).json({
       success: true,
-      message: `Order #${order.orderNumber} status updated to ${status}.`,
-      data: updatedOrder,
+      message: `Order #${updatedOrder.orderNumber} status updated to ${newStatus}.`,
+      order: updatedOrder
     });
   } catch (error) {
     console.error('Update order status error:', error);
