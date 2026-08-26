@@ -7,6 +7,7 @@ import { OrderDetailsModal } from '../../components/Customer/OrderDetailsModal';
 import { OrderQrModal } from '../../components/Admin/OrderQrModal';
 import { AssignCrewModal } from '../../components/Admin/AssignCrewModal';
 import { ReviewQuotationModal } from '../../components/Admin/ReviewQuotationModal';
+import { OrdersCalendarView } from './OrdersCalendarView';
 
 export const AdminOrderManager = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export const AdminOrderManager = () => {
   const [activeTab, setActiveTab] = useState('ALL');
   const [search, setSearch] = useState('');
   const [toastMsg, setToastMsg] = useState(null);
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
 
   // Modals & Dropdown state
   const [selectedDetailsOrder, setSelectedDetailsOrder] = useState(null);
@@ -86,6 +88,36 @@ export const AdminOrderManager = () => {
     ['EVENT_COMPLETED', 'FINAL_PAYMENT_PENDING', 'COMPLETED', 'CLOSED', 'CANCELLED', 'REJECTED'].includes(o.status)
   ).length;
 
+  // Calendar Header Metrics calculations
+  const today = new Date();
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const todayStr = today.toDateString();
+
+  let todayActiveCount = 0;
+  let upcomingThisMonthCount = 0;
+  let completedThisMonthCount = 0;
+
+  orders.forEach((ord) => {
+    if (ord.eventDate) {
+      const eDate = new Date(ord.eventDate);
+      const isToday = eDate.toDateString() === todayStr;
+      const isThisMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+
+      if (isToday && ['SETUP_IN_PROGRESS', 'EVENT_IN_PROGRESS', 'IN_EXECUTION', 'CONFIRMED', 'WORKERS_ASSIGNED'].includes(ord.status)) {
+        todayActiveCount++;
+      }
+
+      if (isThisMonth && eDate >= today && ['QUOTATION_SENT', 'CONFIRMED', 'WORKERS_ASSIGNED'].includes(ord.status)) {
+        upcomingThisMonthCount++;
+      }
+
+      if (isThisMonth && ['COMPLETED', 'EVENT_COMPLETED'].includes(ord.status)) {
+        completedThisMonthCount++;
+      }
+    }
+  });
+
   // Filter & Search Logic (LOOP 55 Tab Categorization)
   const filteredOrders = orders.filter((ord) => {
     // Status Filter
@@ -148,106 +180,167 @@ export const AdminOrderManager = () => {
             </p>
           </div>
 
-          <input
-            type="text"
-            placeholder="🔍 Search Order ID, Customer, Venue..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              backgroundColor: 'var(--bg-surface)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '12px 18px',
-              width: '100%',
-              maxWidth: '360px',
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
-          />
+          <div style={{ display: 'flex', gap: '8px', backgroundColor: 'var(--bg-surface)', padding: '6px', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              style={{
+                backgroundColor: viewMode === 'list' ? '#F59E0B' : 'transparent',
+                color: viewMode === 'list' ? '#0F172A' : 'var(--text-secondary)',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '8px 16px',
+                fontSize: '13px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              📋 List View
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('calendar')}
+              style={{
+                backgroundColor: viewMode === 'calendar' ? '#F59E0B' : 'transparent',
+                color: viewMode === 'calendar' ? '#0F172A' : 'var(--text-secondary)',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '8px 16px',
+                fontSize: '13px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              📅 Calendar Timeline
+            </button>
+          </div>
+
+          {viewMode === 'list' && (
+            <input
+              type="text"
+              placeholder="🔍 Search Order ID, Customer, Venue..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '14px',
+                padding: '12px 18px',
+                width: '100%',
+                maxWidth: '360px',
+                fontSize: '14px',
+                fontWeight: '500',
+              }}
+            />
+          )}
         </div>
 
-        {/* LOOP 70: SMART MOBILE STATUS SELECTOR DROPDOWN (< 768px) */}
-        <div className="show-mobile-only" style={{ display: 'none', width: '100%', marginBottom: '20px', flexDirection: 'column' }}>
-          <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-            Filter Orders by Status:
-          </label>
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value)}
-            style={{
-              width: '100%',
-              backgroundColor: 'var(--bg-surface)',
-              color: '#C97A13',
-              border: '1px solid var(--border-color)',
-              borderRadius: '14px',
-              padding: '12px 16px',
-              fontWeight: '800',
-              fontSize: '15px',
-              outline: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-            }}
-          >
-            <option value="ALL">📦 All Orders ({orders.length})</option>
-            <option value="PENDING">⏳ Pending Review ({pendingCount})</option>
-            <option value="CONFIRMED">✅ Confirmed ({confirmedCount})</option>
-            <option value="ACTIVE">⚡ Active Execution ({activeCount})</option>
-            <option value="COMPLETED">📁 Completed / History ({completedCount})</option>
-          </select>
-        </div>
+        {viewMode === 'calendar' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+            <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>⚡ Today's Active Events</span>
+              <h3 style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0 0 0', color: '#F59E0B' }}>{todayActiveCount}</h3>
+            </div>
+            <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>📆 Upcoming Bookings (This Month)</span>
+              <h3 style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0 0 0', color: '#3B82F6' }}>{upcomingThisMonthCount}</h3>
+            </div>
+            <div style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '16px 20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '800', textTransform: 'uppercase' }}>✅ Completed (This Month)</span>
+              <h3 style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0 0 0', color: '#10B981' }}>{completedThisMonthCount}</h3>
+            </div>
+          </div>
+        )}
 
-        {/* LOOP 70: DESKTOP/TABLET PILL TABS BAR (>= 768px) */}
-        <div
-          className="hidden-mobile"
-          style={{
-            display: 'flex',
-            gap: '10px',
-            marginBottom: '28px',
-            backgroundColor: 'var(--bg-surface)',
-            padding: '8px',
-            borderRadius: '18px',
-            border: '1px solid var(--border-color)',
-            width: '100%',
-            boxSizing: 'border-box',
-            overflowX: 'auto',
-          }}
-        >
-          {[
-            { id: 'ALL', label: `All Orders (${orders.length})` },
-            { id: 'PENDING', label: `Pending Review (${pendingCount})` },
-            { id: 'CONFIRMED', label: `Confirmed (${confirmedCount})` },
-            { id: 'ACTIVE', label: `Active Execution (${activeCount})` },
-            { id: 'COMPLETED', label: `Completed / History (${completedCount})` },
-          ].map((tab) => {
-            const isSelected = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
+        {viewMode === 'list' && (
+          <>
+            {/* LOOP 70: SMART MOBILE STATUS SELECTOR DROPDOWN (< 768px) */}
+            <div className="show-mobile-only" style={{ display: 'none', width: '100%', marginBottom: '20px', flexDirection: 'column' }}>
+              <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                Filter Orders by Status:
+              </label>
+              <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
                 style={{
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap',
-                  backgroundColor: isSelected ? '#C97A13' : 'transparent',
-                  color: isSelected ? '#FFFFFF' : 'var(--text-secondary)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '10px 18px',
+                  width: '100%',
+                  backgroundColor: 'var(--bg-surface)',
+                  color: '#C97A13',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '14px',
+                  padding: '12px 16px',
+                  fontWeight: '800',
                   fontSize: '15px',
-                  fontWeight: isSelected ? '800' : '600',
+                  outline: 'none',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isSelected ? '0 4px 12px rgba(201, 122, 19, 0.3)' : 'none',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
                 }}
               >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+                <option value="ALL">📦 All Orders ({orders.length})</option>
+                <option value="PENDING">⏳ Pending Review ({pendingCount})</option>
+                <option value="CONFIRMED">✅ Confirmed ({confirmedCount})</option>
+                <option value="ACTIVE">⚡ Active Execution ({activeCount})</option>
+                <option value="COMPLETED">📁 Completed / History ({completedCount})</option>
+              </select>
+            </div>
+
+            {/* LOOP 70: DESKTOP/TABLET PILL TABS BAR (>= 768px) */}
+            <div
+              className="hidden-mobile"
+              style={{
+                display: 'flex',
+                gap: '10px',
+                marginBottom: '28px',
+                backgroundColor: 'var(--bg-surface)',
+                padding: '8px',
+                borderRadius: '18px',
+                border: '1px solid var(--border-color)',
+                width: '100%',
+                boxSizing: 'border-box',
+                overflowX: 'auto',
+              }}
+            >
+              {[
+                { id: 'ALL', label: `All Orders (${orders.length})` },
+                { id: 'PENDING', label: `Pending Review (${pendingCount})` },
+                { id: 'CONFIRMED', label: `Confirmed (${confirmedCount})` },
+                { id: 'ACTIVE', label: `Active Execution (${activeCount})` },
+                { id: 'COMPLETED', label: `Completed / History (${completedCount})` },
+              ].map((tab) => {
+                const isSelected = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    style={{
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap',
+                      backgroundColor: isSelected ? '#C97A13' : 'transparent',
+                      color: isSelected ? '#FFFFFF' : 'var(--text-secondary)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      padding: '10px 18px',
+                      fontSize: '15px',
+                      fontWeight: isSelected ? '800' : '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSelected ? '0 4px 12px rgba(201, 122, 19, 0.3)' : 'none',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* LOOP 68: RESPONSIVE DATA CONTAINER (MOBILE STACKED CARDS + DESKTOP TABLE) */}
+        {viewMode === 'list' && (
         <div
           style={{
             backgroundColor: 'var(--bg-surface)',
@@ -735,6 +828,14 @@ export const AdminOrderManager = () => {
         </>
       )}
     </div>
+        )}
+
+        {viewMode === 'calendar' && (
+          <OrdersCalendarView
+            orders={orders}
+            onSelectOrder={setSelectedDetailsOrder}
+          />
+        )}
       </div>
 
       {/* Order Details Modal */}
