@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
+// Real dynamic local date computation
+const getLocalDateString = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 1)); // August 2026
-  const [selectedDate, setSelectedDate] = useState('2026-08-20');
+  const [currentDate, setCurrentDate] = useState(new Date()); // Dynamic current system month
+  const [selectedDate, setSelectedDate] = useState(getLocalDateString(new Date()));
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  const todayDateStr = useMemo(() => getLocalDateString(new Date()), []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -28,7 +38,7 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
     const map = {};
     (orders || []).forEach((ord) => {
       if (!ord.eventDate) return;
-      const dateKey = new Date(ord.eventDate).toISOString().split('T')[0];
+      const dateKey = getLocalDateString(new Date(ord.eventDate));
       if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(ord);
     });
@@ -42,7 +52,7 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
   const jumpToToday = () => {
     const now = new Date();
     setCurrentDate(new Date(now.getFullYear(), now.getMonth(), 1));
-    setSelectedDate(now.toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString(now));
   };
 
   // Calendar cells data
@@ -220,9 +230,21 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
                 );
               }
 
-              const isToday = cell.dateKey === new Date().toISOString().split('T')[0];
+              const isToday = cell.dateKey === todayDateStr;
               const isSelected = selectedDate === cell.dateKey;
               const hasEvents = cell.events && cell.events.length > 0;
+
+              const borderStyle = isToday
+                ? '2px solid #f59e0b'
+                : isSelected
+                ? '2px solid #475569'
+                : `1px solid ${colors.border}`;
+
+              const shadowStyle = isToday
+                ? isSelected ? '0 0 0 2px #3b82f6, 0 0 12px rgba(245, 158, 11, 0.4)' : '0 0 12px rgba(245, 158, 11, 0.3)'
+                : isSelected
+                ? '0 0 0 2px #3b82f6'
+                : 'none';
 
               return (
                 <div
@@ -234,19 +256,34 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
                     padding: '8px',
                     borderRadius: '10px',
                     backgroundColor: isToday ? 'rgba(245, 158, 11, 0.08)' : isSelected ? colors.bgInput : '#0f172a',
-                    border: isToday ? `1px solid ${colors.accentGold}` : isSelected ? `1px solid ${colors.textSecondary}` : `1px solid ${colors.border}`,
+                    border: borderStyle,
+                    boxShadow: shadowStyle,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: '800', color: isToday ? colors.accentGold : colors.textPrimary }}>
-                      {cell.dayNumber}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: isToday ? colors.accentGold : colors.textPrimary }}>
+                        {cell.dayNumber}
+                      </span>
+                      {isToday && (
+                        <span style={{
+                          fontSize: '8px',
+                          fontWeight: '950',
+                          padding: '1px 4px',
+                          borderRadius: '4px',
+                          backgroundColor: colors.accentGold,
+                          color: '#0f172a',
+                          letterSpacing: '0.05em'
+                        }}>
+                          TODAY
+                        </span>
+                      )}
+                    </div>
                     {hasEvents && (
                       <span style={{
                         fontSize: '9px',
@@ -342,8 +379,30 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
                   return <div key={`m-pad-${idx}`} style={{ height: '36px', opacity: 0.1 }} />;
                 }
 
+                const isToday = cell.dateKey === todayDateStr;
                 const isSelected = selectedDate === cell.dateKey;
                 const hasEvents = cell.events && cell.events.length > 0;
+
+                let btnBg = 'rgba(30, 41, 59, 0.4)';
+                let btnBorder = `1px solid ${colors.border}`;
+                let btnColor = colors.textPrimary;
+                let btnShadow = 'none';
+
+                if (isSelected) {
+                  btnBg = '#3b82f6';
+                  btnBorder = '1px solid #3b82f6';
+                  btnColor = '#ffffff';
+                  btnShadow = '0 0 8px rgba(59, 130, 246, 0.4)';
+                } else if (isToday) {
+                  btnBg = 'rgba(245, 158, 11, 0.08)';
+                  btnBorder = '1px solid #f59e0b';
+                  btnColor = '#f59e0b';
+                  btnShadow = '0 0 8px rgba(245, 158, 11, 0.3)';
+                } else if (hasEvents) {
+                  btnBg = 'rgba(245, 158, 11, 0.15)';
+                  btnBorder = '1px solid rgba(245, 158, 11, 0.3)';
+                  btnColor = colors.textPrimary;
+                }
 
                 return (
                   <button
@@ -357,17 +416,14 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: 'none',
+                      border: btnBorder,
                       outline: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      backgroundColor: isSelected
-                        ? colors.accentGold
-                        : hasEvents
-                        ? 'rgba(245, 158, 11, 0.15)'
-                        : 'rgba(30, 41, 59, 0.4)',
-                      color: isSelected ? '#0f172a' : colors.textPrimary,
-                      fontWeight: isSelected ? '800' : '500'
+                      backgroundColor: btnBg,
+                      color: btnColor,
+                      boxShadow: btnShadow,
+                      fontWeight: isSelected || isToday ? '800' : '500'
                     }}
                   >
                     <span style={{ fontSize: '12px' }}>{cell.dayNumber}</span>
@@ -377,7 +433,7 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
                         height: '4px',
                         borderRadius: '50%',
                         marginTop: '2px',
-                        backgroundColor: isSelected ? '#0f172a' : colors.accentGold
+                        backgroundColor: isSelected ? '#ffffff' : colors.accentGold
                       }} />
                     )}
                   </button>
