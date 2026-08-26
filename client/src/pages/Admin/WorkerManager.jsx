@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { WORKER_SKILLS } from '../../types';
 import { formatDateTime } from '../../utils/formatters';
+import { WorkerAvailabilityCalendar } from './WorkerAvailabilityCalendar';
 
 export const WorkerManager = () => {
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'pending' | 'calendar'
   const [workers, setWorkers] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [pendingWorkers, setPendingWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddWorkerModal, setShowAddWorkerModal] = useState(false);
@@ -129,11 +131,24 @@ export const WorkerManager = () => {
     }
   };
 
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch('/api/v1/orders/all', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (json.success) setOrders(json.data);
+    } catch (err) {
+      console.error('Failed to load orders:', err);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchWorkers();
       fetchPendingWorkers();
       fetchPayoutsSummary();
+      fetchOrders();
     }
   }, [token]);
 
@@ -752,303 +767,10 @@ export const WorkerManager = () => {
 
         {/* TAB 3: AVAILABILITY CALENDAR VIEW */}
         {activeTab === 'calendar' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px' }}>
-            {/* Worker Selector Sidebar */}
-            <div
-              style={{
-                backgroundColor: '#1E293B',
-                border: '1px solid #334155',
-                borderRadius: '24px',
-                padding: '24px',
-              }}
-            >
-              <h3 style={{ fontSize: '16px', fontWeight: '800', marginTop: 0, marginBottom: '16px', color: '#F8FAFC' }}>
-                Select Worker Profile
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {workers.map((w) => {
-                  const isSel = selectedWorkerId === w.id;
-                  const activeJobs = (w.assignments || []).length;
-
-                  return (
-                    <div
-                      key={w.id}
-                      onClick={() => setSelectedWorkerId(w.id)}
-                      style={{
-                        backgroundColor: isSel ? 'rgba(245,158,11,0.15)' : '#0F172A',
-                        border: isSel ? '2px solid #F59E0B' : '1px solid #334155',
-                        borderRadius: '16px',
-                        padding: '14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <img
-                        src={w.user?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=worker'}
-                        alt={w.user?.name}
-                        style={{ width: '40px', height: '40px', borderRadius: '50%', border: isSel ? '2px solid #F59E0B' : '1px solid #334155', objectFit: 'cover' }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: '800', fontSize: '14px', color: isSel ? '#F59E0B' : '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {w.user?.name}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>
-                          {w.specialization[0] || 'Technician'}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          backgroundColor: activeJobs > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                          color: activeJobs > 0 ? '#EF4444' : '#10B981',
-                          fontSize: '11px',
-                          fontWeight: '800',
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                        }}
-                      >
-                        {activeJobs > 0 ? `${activeJobs} Jobs` : 'Free'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Interactive Monthly Calendar Grid & Schedule View */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div
-                style={{
-                  backgroundColor: '#1E293B',
-                  border: '1px solid #334155',
-                  borderRadius: '24px',
-                  padding: '28px',
-                }}
-              >
-                {/* Month Switcher Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-                  <div>
-                    <h2 style={{ fontSize: '22px', fontWeight: '800', margin: 0, color: '#F8FAFC' }}>
-                      📅 {selectedWorkerObj?.user?.name || 'Worker'}'s Schedule
-                    </h2>
-                    <span style={{ fontSize: '13px', color: '#94A3B8' }}>
-                      {monthNames[month]} {year} Availability Grid
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentMonthDate(new Date(year, month - 1, 1))}
-                      style={{ backgroundColor: '#0F172A', color: '#F8FAFC', border: '1px solid #334155', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
-                    >
-                      ◀ Prev Month
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentMonthDate(new Date(2026, 7, 1))}
-                      style={{ backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', fontWeight: '800', cursor: 'pointer' }}
-                    >
-                      Current Month
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentMonthDate(new Date(year, month + 1, 1))}
-                      style={{ backgroundColor: '#0F172A', color: '#F8FAFC', border: '1px solid #334155', borderRadius: '10px', padding: '8px 14px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
-                    >
-                      Next Month ▶
-                    </button>
-                  </div>
-                </div>
-
-                {/* 7 Columns Days Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                    <div key={day} style={{ textAlign: 'center', fontWeight: '800', fontSize: '12px', color: '#94A3B8', textTransform: 'uppercase', padding: '8px' }}>
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Days Grid Cells */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-                  {/* Empty Leading Offset Cells */}
-                  {Array.from({ length: startDayIndex }).map((_, idx) => (
-                    <div key={`offset-${idx}`} style={{ backgroundColor: '#0F172A', opacity: 0.3, borderRadius: '14px', minHeight: '80px' }} />
-                  ))}
-
-                  {/* Days of Current Month */}
-                  {Array.from({ length: daysInMonth }).map((_, idx) => {
-                    const dayNum = idx + 1;
-                    const dateObj = new Date(year, month, dayNum);
-                    const dateStr = dateObj.toDateString();
-
-                    // Find matching assigned jobs for this date
-                    const dayAssignments = (workerSchedule?.assignments || []).filter(
-                      (asg) => asg.order?.eventDate && new Date(asg.order.eventDate).toDateString() === dateStr
-                    );
-
-                    // Find matching leaves for this date
-                    const dayLeaves = (workerSchedule?.availabilities || []).filter(
-                      (av) => (av.status === 'ON_LEAVE' || av.status === 'UNAVAILABLE') && new Date(av.date).toDateString() === dateStr
-                    );
-
-                    const isBooked = dayAssignments.length > 0;
-                    const isLeave = dayLeaves.length > 0;
-
-                    return (
-                      <div
-                        key={dayNum}
-                        style={{
-                          backgroundColor: isBooked ? 'rgba(239, 68, 68, 0.15)' : isLeave ? 'rgba(245, 158, 11, 0.15)' : '#0F172A',
-                          border: isBooked ? '1px solid #EF4444' : isLeave ? '1px solid #F59E0B' : '1px solid #334155',
-                          borderRadius: '14px',
-                          padding: '10px',
-                          minHeight: '80px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: '900', fontSize: '14px', color: isBooked ? '#EF4444' : isLeave ? '#F59E0B' : '#F8FAFC' }}>
-                            {dayNum}
-                          </span>
-                          <span style={{ fontSize: '10px', fontWeight: '800', color: isBooked ? '#EF4444' : isLeave ? '#F59E0B' : '#10B981' }}>
-                            {isBooked ? '🔴 Booked' : isLeave ? '🟡 Leave' : '🟢 Free'}
-                          </span>
-                        </div>
-
-                        <div>
-                          {dayAssignments.map((asg) => (
-                            <div
-                              key={asg.id}
-                              style={{
-                                backgroundColor: '#EF4444',
-                                color: '#FFFFFF',
-                                fontSize: '10px',
-                                fontWeight: '800',
-                                padding: '2px 6px',
-                                borderRadius: '6px',
-                                marginTop: '4px',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              }}
-                            >
-                              #{asg.order?.orderNumber} • {asg.order?.eventType}
-                            </div>
-                          ))}
-
-                          {dayLeaves.map((l) => (
-                            <div
-                              key={l.id}
-                              style={{
-                                backgroundColor: '#F59E0B',
-                                color: '#0F172A',
-                                fontSize: '10px',
-                                fontWeight: '800',
-                                padding: '2px 6px',
-                                borderRadius: '6px',
-                                marginTop: '4px',
-                              }}
-                            >
-                              On Leave
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Detailed Schedule Breakdown & Leave Action Button */}
-              <div
-                style={{
-                  backgroundColor: '#1E293B',
-                  border: '1px solid #334155',
-                  borderRadius: '24px',
-                  padding: '28px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#F8FAFC' }}>
-                    📋 Upcoming Assigned Jobs & Leaves
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setMarkLeaveModal({ isOpen: true, dateStr: new Date().toISOString().split('T')[0] })}
-                    style={{
-                      backgroundColor: '#F59E0B',
-                      color: '#0F172A',
-                      border: 'none',
-                      borderRadius: '12px',
-                      padding: '10px 18px',
-                      fontSize: '13px',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)',
-                    }}
-                  >
-                    + Mark Leave / Unavailability
-                  </button>
-                </div>
-
-                {workerSchedule ? (
-                  <div>
-                    {(workerSchedule.assignments || []).length === 0 && (workerSchedule.availabilities || []).length === 0 ? (
-                      <div style={{ padding: '30px', textAlign: 'center', color: '#94A3B8', backgroundColor: '#0F172A', borderRadius: '16px' }}>
-                        No active jobs assigned or leaves marked for this worker.
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {(workerSchedule.assignments || []).map((asg) => (
-                          <div
-                            key={asg.id}
-                            style={{
-                              backgroundColor: '#0F172A',
-                              padding: '16px 20px',
-                              borderRadius: '16px',
-                              borderLeft: '5px solid #10B981',
-                              display: 'flex',
-                              justify: 'space-between',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <div>
-                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                <span style={{ fontWeight: '900', color: '#F59E0B', fontSize: '16px' }}>
-                                  #{asg.order?.orderNumber}
-                                </span>
-                                <span style={{ fontSize: '15px', fontWeight: '700', color: '#F8FAFC' }}>
-                                  {asg.order?.eventType}
-                                </span>
-                              </div>
-                              <div style={{ fontSize: '13px', color: '#94A3B8', marginTop: '4px' }}>
-                                📍 Venue: {asg.order?.venueAddress || 'Main Venue'}
-                              </div>
-                              <div style={{ fontSize: '13px', color: '#94A3B8', marginTop: '2px' }}>
-                                🗓️ Date: {formatDateTime(asg.order?.eventDate)} ({asg.order?.startTime} - {asg.order?.endTime})
-                              </div>
-                            </div>
-                            <span style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10B981', fontWeight: '800', fontSize: '12px', padding: '6px 12px', borderRadius: '10px' }}>
-                              Role: {asg.assignedRole || 'Event Technician'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ color: '#94A3B8' }}>Select worker profile from left list.</div>
-                )}
-              </div>
-            </div>
-          </div>
+          <WorkerAvailabilityCalendar
+            workers={workers}
+            orders={orders}
+          />
         )}
       </div>
 
