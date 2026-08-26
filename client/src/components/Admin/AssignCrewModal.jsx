@@ -7,7 +7,14 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(true);
   const [selectedWorkerIds, setSelectedWorkerIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [errorMsg, setErrorMsg] = useState(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (isOpen && order) {
@@ -89,7 +96,7 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.85)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-end' : 'center',
         justifyContent: 'center',
         zIndex: 9999,
         fontFamily: 'Inter, system-ui, sans-serif',
@@ -98,13 +105,20 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
       <div
         style={{
           backgroundColor: '#1E293B',
-          borderRadius: '24px',
+          borderTopLeftRadius: '24px',
+          borderTopRightRadius: '24px',
+          borderBottomLeftRadius: isMobile ? '0' : '24px',
+          borderBottomRightRadius: isMobile ? '0' : '24px',
           border: '1px solid #334155',
-          padding: '32px',
+          padding: isMobile ? '20px 16px' : '32px',
           maxWidth: '560px',
-          width: '92%',
+          width: '100%',
+          maxHeight: isMobile ? '92vh' : '90vh',
+          display: 'flex',
+          flexDirection: 'column',
           color: '#F8FAFC',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+          overflowY: 'auto',
         }}
       >
         {/* Modal Header */}
@@ -113,7 +127,7 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
             <span style={{ fontSize: '11px', fontWeight: '800', color: '#F59E0B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               CREW & WORKER MANAGEMENT
             </span>
-            <h2 style={{ fontSize: '22px', fontWeight: '800', margin: '4px 0 0 0' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: '4px 0 0 0' }}>
               Assign Crew • Order #{order.orderNumber}
             </h2>
           </div>
@@ -126,7 +140,7 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
           </button>
         </div>
 
-        <p style={{ fontSize: '14px', color: '#94A3B8', marginTop: 0, marginBottom: '20px' }}>
+        <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: 0, marginBottom: '20px' }}>
           Select available onboarded technicians to deploy for event setup, live operation, and teardown.
         </p>
 
@@ -145,8 +159,8 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
             No registered active workers found. Add workers in Worker Management tab.
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
-            <div style={{ maxHeight: '340px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px', marginBottom: '24px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <div style={{ maxHeight: isMobile ? '300px' : '340px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px', marginBottom: '24px' }}>
               {workers.map((w) => {
                 const isSelected = selectedWorkerIds.includes(w.id);
                 const user = w.user || {};
@@ -168,18 +182,18 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', width: '100%' }}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {}} // handled by parent div click
-                        style={{ width: '18px', height: '18px', accentColor: '#F59E0B', cursor: 'pointer' }}
+                        style={{ width: '22px', height: '22px', accentColor: '#F59E0B', cursor: 'pointer', flexShrink: 0 }}
                       />
-                      <div>
-                        <div style={{ fontWeight: '800', fontSize: '15px', color: '#F8FAFC' }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: '800', fontSize: '14px', color: '#F8FAFC' }}>
                           👤 {user.name || 'Technician'}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>
+                        <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px', wordBreak: 'break-all' }}>
                           📞 {user.phone || 'No phone'} • 📧 {user.email}
                         </div>
                         {specs.length > 0 && (
@@ -190,7 +204,7 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
                                 style={{
                                   backgroundColor: '#1E293B',
                                   color: '#F59E0B',
-                                  fontSize: '11px',
+                                  fontSize: '10px',
                                   fontWeight: '700',
                                   padding: '2px 8px',
                                   borderRadius: '6px',
@@ -209,7 +223,7 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
               })}
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: 'auto' }}>
               <button
                 type="button"
                 onClick={onClose}
@@ -220,7 +234,7 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
                   borderRadius: '12px',
                   padding: '12px 20px',
                   fontWeight: '700',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   cursor: 'pointer',
                 }}
               >
@@ -236,12 +250,12 @@ export const AssignCrewModal = ({ order, isOpen, onClose, onSuccess }) => {
                   borderRadius: '12px',
                   padding: '12px 24px',
                   fontWeight: '900',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   cursor: 'pointer',
                   boxShadow: '0 4px 16px rgba(245, 158, 11, 0.3)',
                 }}
               >
-                {submitting ? 'Dispatching Crew...' : `Assign ${selectedWorkerIds.length} Crew Member(s) ➔`}
+                {submitting ? 'Dispatching...' : `Assign ${selectedWorkerIds.length} Crew ➔`}
               </button>
             </div>
           </form>

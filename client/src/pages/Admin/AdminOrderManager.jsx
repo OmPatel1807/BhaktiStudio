@@ -483,7 +483,17 @@ export const AdminOrderManager = () => {
 
                         <button
                           type="button"
-                          onClick={() => setSelectedAssignOrder(ord)}
+                          onClick={() => {
+                            if (typeof setSelectedAssignCrewOrder === 'function') {
+                              setSelectedAssignCrewOrder(ord);
+                            } else if (typeof setSelectedOrderForCrew === 'function') {
+                              setSelectedOrderForCrew(ord);
+                            } else if (typeof setAssigningOrder === 'function') {
+                              setAssigningOrder(ord);
+                            } else {
+                              console.error('Assign crew handler not bound to mobile card');
+                            }
+                          }}
                           style={{
                             backgroundColor: 'rgba(16, 185, 129, 0.15)',
                             color: '#10B981',
@@ -495,7 +505,7 @@ export const AdminOrderManager = () => {
                             cursor: 'pointer',
                           }}
                         >
-                          👷 Assign Crew
+                          <span>👷</span> Assign Crew
                         </button>
                       </div>
                     </div>
