@@ -1,8 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 1)); // August 2026
   const [selectedDate, setSelectedDate] = useState('2026-08-20');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -64,202 +71,410 @@ export const OrdersCalendarView = ({ orders = [], onSelectOrder }) => {
 
   const selectedDateEvents = ordersByDate[selectedDate] || [];
 
+  // Theme Constants (Glassmorphism & Dark Mode Accent Colors)
+  const colors = {
+    bgSurface: '#0f172a',
+    bgInput: '#1e293b',
+    border: '#334155',
+    textPrimary: '#f8fafc',
+    textSecondary: '#94a3b8',
+    accentGold: '#f59e0b',
+    accentBlue: '#3b82f6',
+    accentGreen: '#10b981',
+    bgPill: '#1e293b',
+    borderPill: '#334155',
+  };
+
   return (
-    <div className="w-full space-y-4">
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* 1. Month Navigation Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '16px 20px',
+        backgroundColor: colors.bgSurface,
+        borderRadius: '16px',
+        border: `1px solid ${colors.border}`,
+        gap: '12px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+      }}>
         <div>
-          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+          <h2 style={{ fontSize: '18px', fontWeight: '800', color: colors.textPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📅</span> {monthNames[month]} {year}
           </h2>
-          <p className="text-xs text-slate-400">Master Schedule of Venue Event Bookings</p>
+          <p style={{ fontSize: '12px', color: colors.textSecondary, margin: '2px 0 0 0' }}>
+            Master Schedule of Venue Event Bookings
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             type="button"
             onClick={() => changeMonth(-1)}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer transition"
+            style={{
+              padding: '8px 14px',
+              backgroundColor: colors.bgInput,
+              color: colors.textPrimary,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
             ◀ Prev Month
           </button>
           <button
             type="button"
             onClick={jumpToToday}
-            className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs cursor-pointer transition shadow"
+            style={{
+              padding: '8px 16px',
+              backgroundColor: colors.accentGold,
+              color: '#0f172a',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
             Today
           </button>
           <button
             type="button"
             onClick={() => changeMonth(1)}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer transition"
+            style={{
+              padding: '8px 14px',
+              backgroundColor: colors.bgInput,
+              color: colors.textPrimary,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
             Next Month ▶
           </button>
         </div>
       </div>
 
-      {/* 2. DESKTOP VIEW (Visible on tablet & desktop >= 768px) */}
-      <div className="hidden md:block bg-slate-900/70 border border-slate-800 rounded-2xl p-4 shadow-xl">
-        {/* Days Header */}
-        <div className="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-slate-400">
-          {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
-            <div key={d} className="py-1">{d}</div>
-          ))}
-        </div>
-
-        {/* 7-Column Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {calendarDays.map((cell, idx) => {
-            if (!cell.isCurrentMonth) {
-              return (
-                <div
-                  key={`pad-${idx}`}
-                  className="h-24 p-2 rounded-xl bg-slate-950/20 border border-slate-900/40 text-xs text-slate-600 select-none"
-                >
-                  {cell.dayNumber}
-                </div>
-              );
-            }
-
-            const isToday = cell.dateKey === new Date().toISOString().split('T')[0];
-            const isSelected = selectedDate === cell.dateKey;
-            const hasEvents = cell.events && cell.events.length > 0;
-
-            return (
-              <div
-                key={cell.dateKey}
-                onClick={() => setSelectedDate(cell.dateKey)}
-                className={`h-24 p-2 rounded-xl border flex flex-col justify-between cursor-pointer transition-all ${isToday
-                    ? 'bg-amber-500/10 border-amber-500/60 shadow-sm shadow-amber-500/10'
-                    : isSelected
-                      ? 'bg-slate-800 border-slate-600'
-                      : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
-                  }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-bold ${isToday ? 'text-amber-400 font-extrabold' : 'text-slate-300'}`}>
-                    {cell.dayNumber}
-                  </span>
-                  {hasEvents && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                      {cell.events.length} {cell.events.length === 1 ? 'Event' : 'Events'}
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1 my-0.5 overflow-hidden">
-                  {cell.events.slice(0, 2).map((ev) => (
-                    <div
-                      key={ev.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onSelectOrder) onSelectOrder(ev);
-                      }}
-                      className="px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[10px] text-slate-200 truncate flex items-center gap-1 cursor-pointer transition"
-                      title={ev.eventType}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                      <span className="truncate">{ev.eventType || 'Event'}</span>
-                    </div>
-                  ))}
-                  {cell.events.length > 2 && (
-                    <div className="text-[9px] text-slate-400 font-medium text-center">
-                      +{cell.events.length - 2} more
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. MOBILE VIEW (Visible on phones < 768px) */}
-      <div className="block md:hidden space-y-3">
-        {/* Compact Monthly Date Picker */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shadow-lg">
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 mb-1">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-              <div key={i}>{d}</div>
+      {/* 2. CONDITIONAL VIEWPORTS USING THE isMobile STATE (Purge-Immune Responsive Engine) */}
+      {!isMobile ? (
+        /* DESKTOP VIEW */
+        <div style={{
+          backgroundColor: '#0b1120',
+          borderRadius: '16px',
+          border: `1px solid ${colors.border}`,
+          padding: '16px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.15)'
+        }}>
+          {/* Day Headers */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '8px',
+            marginBottom: '10px',
+            textAlign: 'center',
+            fontSize: '11px',
+            fontWeight: '800',
+            color: colors.textSecondary,
+            letterSpacing: '0.05em'
+          }}>
+            {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((d) => (
+              <div key={d} style={{ padding: '4px 0' }}>{d}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          {/* Grid Cells */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '8px'
+          }}>
             {calendarDays.map((cell, idx) => {
               if (!cell.isCurrentMonth) {
-                return <div key={`m-pad-${idx}`} className="h-9 opacity-10" />;
+                return (
+                  <div
+                    key={`pad-${idx}`}
+                    style={{
+                      minHeight: '95px',
+                      maxHeight: '115px',
+                      padding: '8px',
+                      borderRadius: '10px',
+                      backgroundColor: 'rgba(15, 23, 42, 0.2)',
+                      border: '1px solid rgba(30, 41, 59, 0.3)',
+                      opacity: 0.3,
+                      color: colors.textSecondary,
+                      fontSize: '12px',
+                      userSelect: 'none'
+                    }}
+                  >
+                    {cell.dayNumber}
+                  </div>
+                );
               }
 
+              const isToday = cell.dateKey === new Date().toISOString().split('T')[0];
               const isSelected = selectedDate === cell.dateKey;
               const hasEvents = cell.events && cell.events.length > 0;
 
               return (
-                <button
-                  type="button"
-                  key={`m-${cell.dateKey}`}
+                <div
+                  key={cell.dateKey}
                   onClick={() => setSelectedDate(cell.dateKey)}
-                  className={`h-9 rounded-lg flex flex-col items-center justify-center transition-all ${isSelected
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
-                      : hasEvents
-                        ? 'bg-slate-800 border border-amber-500/40 text-slate-200'
-                        : 'bg-slate-950/60 text-slate-400 border border-slate-800/60'
-                    }`}
+                  style={{
+                    minHeight: '95px',
+                    maxHeight: '115px',
+                    padding: '8px',
+                    borderRadius: '10px',
+                    backgroundColor: isToday ? 'rgba(245, 158, 11, 0.08)' : isSelected ? colors.bgInput : '#0f172a',
+                    border: isToday ? `1px solid ${colors.accentGold}` : isSelected ? `1px solid ${colors.textSecondary}` : `1px solid ${colors.border}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
+                  }}
                 >
-                  <span className="text-xs">{cell.dayNumber}</span>
-                  {hasEvents && (
-                    <span className={`w-1.5 h-1.5 rounded-full mt-0.5 ${isSelected ? 'bg-slate-950' : 'bg-amber-400'}`} />
-                  )}
-                </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: isToday ? colors.accentGold : colors.textPrimary }}>
+                      {cell.dayNumber}
+                    </span>
+                    {hasEvents && (
+                      <span style={{
+                        fontSize: '9px',
+                        fontWeight: '800',
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                        color: colors.accentGold,
+                        border: `1px solid rgba(245, 158, 11, 0.3)`
+                      }}>
+                        {cell.events.length} {cell.events.length === 1 ? 'Event' : 'Events'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Event list (proportional height, overflow protection) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '4px 0', overflow: 'hidden' }}>
+                    {cell.events.slice(0, 2).map((ev) => (
+                      <div
+                        key={ev.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onSelectOrder) onSelectOrder(ev);
+                        }}
+                        style={{
+                          padding: '4px 6px',
+                          backgroundColor: colors.bgPill,
+                          borderRadius: '6px',
+                          border: `1px solid ${colors.borderPill}`,
+                          fontSize: '10px',
+                          color: colors.textPrimary,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          cursor: 'pointer',
+                          transition: 'opacity 0.2s'
+                        }}
+                        title={ev.eventType}
+                      >
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: colors.accentGold, flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '500' }}>
+                          {ev.eventType || 'Event'}
+                        </span>
+                      </div>
+                    ))}
+                    {cell.events.length > 2 && (
+                      <div style={{ fontSize: '9px', color: colors.textSecondary, textAlign: 'center', fontWeight: '500' }}>
+                        +{cell.events.length - 2} more
+                      </div>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
         </div>
-
-        {/* Selected Date Agenda Details Cards */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-lg">
-          <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
-            <h3 className="text-xs font-bold text-slate-200">
-              Agenda for {selectedDate ? new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Selected Date'}
-            </h3>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
-              {selectedDateEvents.length} Booked
-            </span>
-          </div>
-
-          {selectedDateEvents.length === 0 ? (
-            <div className="py-6 text-center text-xs text-slate-500">
-              No event orders scheduled on this date.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {selectedDateEvents.map((ev) => (
-                <div
-                  key={ev.id}
-                  onClick={() => onSelectOrder && onSelectOrder(ev)}
-                  className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between hover:border-slate-700 transition cursor-pointer"
-                >
-                  <div className="space-y-0.5">
-                    <h4 className="text-xs font-bold text-slate-100">{ev.eventType || 'Event Setup'}</h4>
-                    <p className="text-[10px] text-slate-400">📍 {ev.venueAddress || 'Surat / Kadi'}</p>
-                    <span className="inline-block text-[9px] font-semibold text-amber-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
-                      {ev.orderNumber || 'BS-2026'}
-                    </span>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-amber-400">
-                      ₹{(ev.grandTotal || ev.totalAmount || 0).toLocaleString('en-IN')}
-                    </p>
-                    <span className="text-[10px] text-slate-400">View ➔</span>
-                  </div>
-                </div>
+      ) : (
+        /* MOBILE TWO-TIER VIEW */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Top Tier: Compact tap-grid */}
+          <div style={{
+            backgroundColor: colors.bgSurface,
+            border: `1px solid ${colors.border}`,
+            borderRadius: '16px',
+            padding: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              gap: '4px',
+              textAlign: 'center',
+              fontSize: '10px',
+              fontWeight: '800',
+              color: colors.textSecondary,
+              marginBottom: '6px'
+            }}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <div key={i}>{d}</div>
               ))}
             </div>
-          )}
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              gap: '4px'
+            }}>
+              {calendarDays.map((cell, idx) => {
+                if (!cell.isCurrentMonth) {
+                  return <div key={`m-pad-${idx}`} style={{ height: '36px', opacity: 0.1 }} />;
+                }
+
+                const isSelected = selectedDate === cell.dateKey;
+                const hasEvents = cell.events && cell.events.length > 0;
+
+                return (
+                  <button
+                    type="button"
+                    key={`m-${cell.dateKey}`}
+                    onClick={() => setSelectedDate(cell.dateKey)}
+                    style={{
+                      height: '36px',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: 'none',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      backgroundColor: isSelected
+                        ? colors.accentGold
+                        : hasEvents
+                        ? 'rgba(245, 158, 11, 0.15)'
+                        : 'rgba(30, 41, 59, 0.4)',
+                      color: isSelected ? '#0f172a' : colors.textPrimary,
+                      fontWeight: isSelected ? '800' : '500'
+                    }}
+                  >
+                    <span style={{ fontSize: '12px' }}>{cell.dayNumber}</span>
+                    {hasEvents && (
+                      <span style={{
+                        width: '4px',
+                        height: '4px',
+                        borderRadius: '50%',
+                        marginTop: '2px',
+                        backgroundColor: isSelected ? '#0f172a' : colors.accentGold
+                      }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Bottom Tier: Agenda list details */}
+          <div style={{
+            backgroundColor: colors.bgSurface,
+            border: `1px solid ${colors.border}`,
+            borderRadius: '16px',
+            padding: '16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: '10px',
+              marginBottom: '12px',
+              borderBottom: `1px solid ${colors.border}`
+            }}>
+              <h3 style={{ fontSize: '13px', fontWeight: '800', color: colors.textPrimary, margin: 0 }}>
+                Agenda for {selectedDate ? new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Selected Date'}
+              </h3>
+              <span style={{
+                fontSize: '10px',
+                fontWeight: '800',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                color: colors.accentGold
+              }}>
+                {selectedDateEvents.length} Booked
+              </span>
+            </div>
+
+            {selectedDateEvents.length === 0 ? (
+              <div style={{ padding: '24px 0', textAlign: 'center', fontSize: '12px', color: colors.textSecondary }}>
+                No event orders booked on this date.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {selectedDateEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    onClick={() => onSelectOrder && onSelectOrder(ev)}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: '#0f172a',
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.2s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <h4 style={{ fontSize: '12px', fontWeight: '800', color: colors.textPrimary, margin: 0 }}>
+                        {ev.eventType || 'Event Setup'}
+                      </h4>
+                      <p style={{ fontSize: '10px', color: colors.textSecondary, margin: 0 }}>
+                        📍 {ev.venueAddress || 'Surat'}
+                      </p>
+                      <div>
+                        <span style={{
+                          display: 'inline-block',
+                          fontSize: '9px',
+                          fontWeight: '700',
+                          color: colors.accentGold,
+                          backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          border: `1px solid rgba(245, 158, 11, 0.2)`
+                        }}>
+                          {ev.orderNumber || 'BS-2026'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '12px', fontWeight: '800', color: colors.accentGold, margin: 0 }}>
+                        Rs.{(ev.grandTotal || ev.totalAmount || 0).toLocaleString('en-IN')}
+                      </p>
+                      <span style={{ fontSize: '10px', color: colors.textSecondary }}>View ➔</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

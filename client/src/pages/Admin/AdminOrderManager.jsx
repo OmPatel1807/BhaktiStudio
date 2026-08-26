@@ -88,35 +88,23 @@ export const AdminOrderManager = () => {
     ['EVENT_COMPLETED', 'FINAL_PAYMENT_PENDING', 'COMPLETED', 'CLOSED', 'CANCELLED', 'REJECTED'].includes(o.status)
   ).length;
 
-  // Calendar Header Metrics calculations
-  const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const todayStr = today.toDateString();
+  // Dynamic Metric Calculation for Orders
+  const now = new Date();
+  const todayDateStr = now.toISOString().split('T')[0];
 
-  let todayActiveCount = 0;
-  let upcomingThisMonthCount = 0;
-  let completedThisMonthCount = 0;
+  const todayActiveCount = (orders || []).filter(o => {
+    if (!o.eventDate) return false;
+    const d = new Date(o.eventDate).toISOString().split('T')[0];
+    return d === todayDateStr || o.status === 'ACTIVE_EXECUTION';
+  }).length;
 
-  orders.forEach((ord) => {
-    if (ord.eventDate) {
-      const eDate = new Date(ord.eventDate);
-      const isToday = eDate.toDateString() === todayStr;
-      const isThisMonth = eDate.getMonth() === currentMonth && eDate.getFullYear() === currentYear;
+  const upcomingThisMonthCount = (orders || []).filter(o => {
+    if (!o.eventDate) return false;
+    const isNotFinished = o.status !== 'COMPLETED' && o.status !== 'REJECTED' && o.status !== 'CANCELLED';
+    return isNotFinished;
+  }).length;
 
-      if (isToday && ['SETUP_IN_PROGRESS', 'EVENT_IN_PROGRESS', 'IN_EXECUTION', 'CONFIRMED', 'WORKERS_ASSIGNED'].includes(ord.status)) {
-        todayActiveCount++;
-      }
-
-      if (isThisMonth && eDate >= today && ['QUOTATION_SENT', 'CONFIRMED', 'WORKERS_ASSIGNED'].includes(ord.status)) {
-        upcomingThisMonthCount++;
-      }
-
-      if (isThisMonth && ['COMPLETED', 'EVENT_COMPLETED'].includes(ord.status)) {
-        completedThisMonthCount++;
-      }
-    }
-  });
+  const completedThisMonthCount = (orders || []).filter(o => o.status === 'COMPLETED').length;
 
   // Filter & Search Logic (LOOP 55 Tab Categorization)
   const filteredOrders = orders.filter((ord) => {
