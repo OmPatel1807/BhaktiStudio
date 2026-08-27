@@ -367,7 +367,8 @@ export const getMyOrders = async (req, res) => {
       },
     });
 
-    return res.json({ success: true, data: orders });
+    const sanitizedOrders = orders.map((ord) => sanitizeOrderFinancials(ord));
+    return res.json({ success: true, data: sanitizedOrders });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -405,7 +406,8 @@ export const getAllOrders = async (req, res) => {
       },
     });
 
-    return res.json({ success: true, data: orders });
+    const sanitizedOrders = orders.map((ord) => sanitizeOrderFinancials(ord));
+    return res.json({ success: true, data: sanitizedOrders });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
