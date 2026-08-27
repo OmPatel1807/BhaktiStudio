@@ -6,7 +6,7 @@
  * as the authoritative source once it exists.
  */
 
-import { calculateEstimatedPricing, getAdvancePercentage, getTaxPercentage } from '../services/pricingService';
+import { calculateEstimatedPricing, getAdvancePercentage, getTaxPercentage } from '../services/pricingService.js';
 
 const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
 

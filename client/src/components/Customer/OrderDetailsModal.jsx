@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { getAdvancePercentage } from '../../services/pricingService';
-import { rehydrateQuotation, computeEquipmentSubtotal } from '../../utils/quotationMath';
+import { rehydrateQuotation, computeEquipmentSubtotal, computeLineItemPrice } from '../../utils/quotationMath';
 
 export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, onMarkCompleted }) => {
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'proof'
@@ -182,14 +182,26 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {order.orderItems?.map((item, idx) => {
-                  const rate = Number(item.finalRate || item.estimatedRate || 0);
-                  const qty = Number(item.quantity || 1);
-                  const days = Number(item.days || order.durationDays || order.totalDays || 1);
-                  const isSqFt = Boolean(item.widthFt && item.heightFt);
-                  const area = isSqFt ? Number(item.widthFt) * Number(item.heightFt) : 0;
-                  const itemTotal = isSqFt
-                    ? (rate > 500 && area > 1 ? rate : rate * area) * days * qty
-                    : rate * qty * days;
+                  const qty = Number(item.quantity) || 1;
+                  const days = Number(item.days || order.durationDays || order.totalDays) || 1;
+                  const isArea = Boolean(item.pricingType === 'AREA_BASED' || (item.widthFt && item.heightFt) || (item.width && item.height));
+                  const width = Number(item.widthFt || item.width || (isArea ? (order.ledWidthFeet || 12) : 0));
+                  const height = Number(item.heightFt || item.height || (isArea ? (order.ledHeightFeet || 8) : 0));
+                  const sqft = isArea ? (width > 0 && height > 0 ? width * height : 96) : null;
+
+                  // Item line total derived deterministically matching computeLineItemPrice
+                  const itemTotal = computeLineItemPrice(item);
+
+                  // Derive pure single-unit base rate safely to prevent double-multiplication
+                  let baseUnitRate = Number(item.baseRate || item.unitRate || 0);
+                  if (!baseUnitRate) {
+                    const rawRate = Number(item.finalRate || item.estimatedRate || item.price || item.rate || 0);
+                    if (isArea && sqft > 0) {
+                      baseUnitRate = rawRate > 500 ? Math.round(rawRate / sqft) : (rawRate || Math.round(itemTotal / (sqft * days * qty)));
+                    } else {
+                      baseUnitRate = rawRate || Math.round(itemTotal / (qty * days));
+                    }
+                  }
 
                   return (
                     <div
@@ -197,28 +209,30 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
                       style={{
                         backgroundColor: 'var(--bg-input)',
                         padding: '12px 16px',
-                        borderRadius: '10px',
+                        borderRadius: '12px',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         fontSize: '14px',
+                        border: '1px solid var(--border-color)',
                       }}
                     >
                       <div>
                         <div>
-                          <strong style={{ color: 'var(--text-primary)' }}>{item.serviceName}</strong>
-                          {isSqFt && ` (${item.widthFt} × ${item.heightFt} ft)`}
+                          <strong style={{ color: 'var(--text-primary)' }}>
+                            {item.serviceName || item.name || item.title || 'Service Item'}
+                          </strong>
+                          {isArea && width > 0 && height > 0 && ` (${width} × ${height} ft)`}
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                          {isSqFt ? (
-                            `${area} sq ft @ ${formatCurrency(rate)}/sqft × ${days} ${days > 1 ? 'Days' : 'Day'}`
-                          ) : (
-                            `${qty} ${qty > 1 ? 'Units' : 'Unit'} × ${formatCurrency(rate)}/day × ${days} ${days > 1 ? 'Days' : 'Day'}`
-                          )}
+                        <div style={{ fontSize: '12px', color: '#C97A13', fontWeight: '600', marginTop: '2px', fontFamily: 'monospace' }}>
+                          {isArea && sqft > 0
+                            ? `${sqft} sq ft (${width}×${height} ft) @ ₹${baseUnitRate.toLocaleString('en-IN')}/sqft${days > 1 ? ` × ${days} Days` : ''}`
+                            : `${qty} ${qty > 1 ? 'Units' : 'Unit'} × ₹${baseUnitRate.toLocaleString('en-IN')}/day${days > 1 ? ` × ${days} Days` : ''}`
+                          }
                         </div>
                       </div>
-                      <span style={{ fontWeight: '800', color: '#C97A13', fontSize: '15px' }}>
-                        {formatCurrency(itemTotal)}
+                      <span style={{ fontWeight: '800', color: 'var(--text-primary)', fontSize: '15px' }}>
+                        ₹{itemTotal.toLocaleString('en-IN')}.00
                       </span>
                     </div>
                   );
