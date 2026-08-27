@@ -132,22 +132,30 @@ export const emailTemplates = {
   }),
 
   quotationIssued: (order) => ({
-    subject: `Quotation Ready for Order #${order.orderNumber || order.id.slice(0, 8)} - Bhakti Studio`,
+    subject: `📄 Quotation Issued: Order #${order.orderNumber || order.id.slice(0, 8)} - Bhakti Studio`,
     html: `
-      <div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; border-radius: 12px; max-width: 600px; margin: auto;">
-        <h2 style="color: #f59e0b; margin-top: 0;">Commercial Estimate Ready</h2>
-        <p>Dear <strong>${order.customerName}</strong>,</p>
-        <p>The quotation for your <strong>${order.eventType}</strong> is ready for review.</p>
-        <div style="background: #1e293b; padding: 16px; border-radius: 8px; margin: 16px 0; border: 1px solid #334155;">
-          <p style="margin: 4px 0; font-size: 16px;"><strong>Grand Total:</strong> Rs. ${(order.grandTotal || order.totalAmount || 0).toLocaleString('en-IN')}</p>
+      <div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 28px; border-radius: 14px; max-width: 600px; margin: auto; border: 1px solid #334155;">
+        <h2 style="color: #f59e0b; margin-top: 0; font-size: 22px;">Bhakti Studio & Event Production</h2>
+        <p style="font-size: 15px;">Dear <strong>${order.customerName || 'Valued Client'}</strong>,</p>
+        <p style="font-size: 14px; color: #cbd5e1;">Your official commercial quotation for <strong>${order.eventType}</strong> has been generated and published by our production team.</p>
+        
+        <div style="background: #1e293b; padding: 18px; border-radius: 10px; margin: 18px 0; border: 1px solid #475569;">
+          <p style="margin: 6px 0; font-size: 14px;"><strong>Order Ref:</strong> #${order.orderNumber || order.id}</p>
+          <p style="margin: 6px 0; font-size: 14px;"><strong>Event Type:</strong> ${order.eventType}</p>
+          <p style="margin: 6px 0; font-size: 14px;"><strong>Grand Total:</strong> <span style="color: #f59e0b; font-weight: 800; font-size: 16px;">Rs. ${(order.grandTotal || order.totalAmount || 0).toLocaleString('en-IN')}.00</span></p>
+          <p style="margin: 6px 0; font-size: 13px; color: #94a3b8;"><strong>30% Advance Required:</strong> Rs. ${Math.round((order.grandTotal || order.totalAmount || 0) * 0.3).toLocaleString('en-IN')}.00</p>
         </div>
-        <p style="margin: 20px 0;">
+
+        <div style="text-align: center; margin: 24px 0;">
           <a href="${process.env.CLIENT_URL || 'http://localhost:3000'}/customer/dashboard" 
-             style="background: #f59e0b; color: #0f172a; padding: 12px 24px; border-radius: 8px; font-weight: bold; text-decoration: none; display: inline-block;">
-             Review & Approve Quotation
+             style="background: #f59e0b; color: #0f172a; padding: 14px 28px; border-radius: 10px; font-weight: 800; font-size: 15px; text-decoration: none; display: inline-block;">
+             📄 View Breakdown, Download PDF & Pay Advance
           </a>
+        </div>
+
+        <p style="color: #94a3b8; font-size: 13px; line-height: 1.5;">
+          You can download the high-resolution official Quotation PDF with full line-item formulas, terms of service, and seal directly from your customer dashboard.
         </p>
-        <p style="color: #94a3b8; font-size: 13px;">Log in to your customer dashboard to review line items, download the quotation PDF, and confirm the booking.</p>
       </div>
     `
   }),
