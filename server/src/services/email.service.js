@@ -6,14 +6,13 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 const FROM_EMAIL = process.env.EMAIL_FROM || 'Bhakti Studio <onboarding@resend.dev>';
 
 export const getAdminNotificationRecipients = async () => {
-  const envAdmins = (process.env.ADMIN_NOTIFICATION_EMAIL || process.env.EMAIL_ADMIN || '')
+  const envAdmins = (process.env.ADMIN_NOTIFICATION_EMAIL || process.env.EMAIL_ADMIN || 'ompatel.666to18@gmail.com')
     .split(',')
     .map(e => e.trim())
-    .filter(Boolean);
+    .filter(e => Boolean(e) && !e.includes('admin@bhaktistudio.com') && !e.includes('example.com'));
 
-  // Default fallback if env has nothing
   if (envAdmins.length === 0) {
-    envAdmins.push('admin@bhaktistudio.com');
+    envAdmins.push('ompatel.666to18@gmail.com');
   }
 
   try {
@@ -21,9 +20,11 @@ export const getAdminNotificationRecipients = async () => {
       where: { role: 'ADMIN' },
       select: { email: true }
     });
-    const dbAdminEmails = dbAdmins.map(a => a.email).filter(Boolean);
+    const dbAdminEmails = dbAdmins
+      .map(a => a.email?.trim())
+      .filter(e => Boolean(e) && !e.includes('admin@bhaktistudio.com') && !e.includes('example.com'));
     
-    // Merge unique emails
+    // Merge unique valid emails
     return Array.from(new Set([...envAdmins, ...dbAdminEmails]));
   } catch (err) {
     console.warn('Failed to query DB admins, falling back to ENV:', err.message);
@@ -32,24 +33,64 @@ export const getAdminNotificationRecipients = async () => {
 };
 
 export const sendTransactionalEmail = async ({ to, subject, html, text }) => {
+  const recipients = Array.isArray(to) ? to : [to];
+  const primaryAdmin = process.env.ADMIN_NOTIFICATION_EMAIL || 'ompatel.666to18@gmail.com';
+
   if (!resend) {
-    console.log(`[EMAIL_MOCK_DISPATCH] To: ${to} | Subject: ${subject}`);
+    console.log(`[EMAIL_MOCK_DISPATCH] To: ${recipients.join(', ')} | Subject: ${subject}`);
     return { success: true, mocked: true };
   }
 
-  try {
-    const response = await resend.emails.send({
-      from: FROM_EMAIL,
-      to,
-      subject,
-      html,
-      text: text || subject,
-    });
-    return { success: true, data: response };
-  } catch (error) {
-    console.error('Email Dispatch Failed:', error.message);
-    return { success: false, error: error.message };
+  const results = [];
+
+  for (const recipient of recipients) {
+    if (!recipient || recipient.includes('admin@bhaktistudio.com') || recipient.includes('example.com')) {
+      continue;
+    }
+
+    try {
+      const response = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: recipient,
+        subject,
+        html,
+        text: text || subject,
+      });
+
+      if (response.error) {
+        console.warn(`[Resend API Warning for ${recipient}]:`, response.error.message);
+        
+        // If Resend failed because of sandbox unverified domain (403), forward to primary verified admin!
+        if (response.error.statusCode === 403 || response.error.message?.includes('testing emails')) {
+          if (recipient !== primaryAdmin) {
+            console.log(`[SANDBOX_FORWARD] Forwarding email to verified admin: ${primaryAdmin}`);
+            const fwdResponse = await resend.emails.send({
+              from: FROM_EMAIL,
+              to: primaryAdmin,
+              subject: `[FORWARD for ${recipient}] ${subject}`,
+              html: `
+                <div style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-family: Arial, sans-serif; font-size: 13px;">
+                  ⚠️ <strong>Sandbox Notice:</strong> Original recipient was <code>${recipient}</code>. Forwarded to registered account.
+                </div>
+                ${html}
+              `,
+              text: text || subject,
+            });
+            results.push({ recipient, forwardedTo: primaryAdmin, success: !fwdResponse.error, data: fwdResponse });
+            continue;
+          }
+        }
+        results.push({ recipient, success: false, error: response.error.message });
+      } else {
+        results.push({ recipient, success: true, data: response });
+      }
+    } catch (error) {
+      console.error(`Email Dispatch Exception for ${recipient}:`, error.message);
+      results.push({ recipient, success: false, error: error.message });
+    }
   }
+
+  return { success: results.some(r => r.success), results };
 };
 
 // Reusable Branded Email Templates
