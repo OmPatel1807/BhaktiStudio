@@ -73,8 +73,18 @@ export const downloadQuotationPdf = (order) => {
     doc.text(`Event Type: ${order.eventType || 'Event Production'}`, 18, 65);
     doc.text(`Venue / Location: ${order.venueAddress || 'Surat / Gujarat'}`, 18, 71);
 
-    const eventDateStr = order.eventDate ? new Date(order.eventDate).toLocaleDateString('en-IN') : 'Scheduled';
-    doc.text(`Execution Date: ${eventDateStr}`, 115, 65);
+    const days = Number(order.durationDays || order.totalDays || 1);
+    const startDateObj = order.startDate ? new Date(order.startDate) : (order.eventDate ? new Date(order.eventDate) : null);
+    const endDateObj = order.endDate ? new Date(order.endDate) : startDateObj;
+
+    let eventDateStr = startDateObj ? startDateObj.toLocaleDateString('en-IN') : 'Scheduled';
+    if (days > 1 && endDateObj && startDateObj && endDateObj.getTime() !== startDateObj.getTime()) {
+      eventDateStr = `${startDateObj.toLocaleDateString('en-IN')} - ${endDateObj.toLocaleDateString('en-IN')} (${days} Days)`;
+    } else if (days > 1) {
+      eventDateStr = `${eventDateStr} (${days} Days)`;
+    }
+
+    doc.text(`Event Span: ${eventDateStr}`, 115, 65);
     doc.text(`Payment Terms: 30% Advance Lock`, 115, 71);
 
     // 3. TABLE OF LINE ITEMS
@@ -83,8 +93,6 @@ export const downloadQuotationPdf = (order) => {
       { name: order.eventType || 'Complete Event Setup', quantity: 1, rate: order.grandTotal || 43660 }
     ];
 
-    const days = Number(order.totalDays || 1);
-
     const tableRows = itemsList.map((it, idx) => {
       const name = it.name || it.serviceName || it.title || `Production Service #${idx + 1}`;
       const isSqFt = it.unit === 'sqft' || name.toLowerCase().includes('led') || (it.serviceName || '').toLowerCase().includes('led');
@@ -92,7 +100,7 @@ export const downloadQuotationPdf = (order) => {
       const height = Number(it.heightFt || it.ledHeight || it.height || (isSqFt ? order.ledHeightFeet : 0) || 0);
       
       const qtyVal = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
-      const qtyStr = isSqFt ? `${qtyVal} sq ft` : `${qtyVal}`;
+      const qtyStr = isSqFt ? `${qtyVal} sq ft` : `${qtyVal} ${qtyVal > 1 ? 'Units' : 'Unit'}`;
       const rateVal = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
       const totalVal = qtyVal * rateVal * days;
 
@@ -101,13 +109,14 @@ export const downloadQuotationPdf = (order) => {
         name,
         qtyStr,
         `Rs. ${rateVal.toLocaleString('en-IN')}`,
+        `${days} ${days > 1 ? 'Days' : 'Day'}`,
         `Rs. ${totalVal.toLocaleString('en-IN')}`
       ];
     });
 
     autoTable(doc, {
       startY: 84,
-      head: [['#', 'Item / Service Description', 'Quantity / Area', 'Unit Rate (INR)', 'Amount (INR)']],
+      head: [['#', 'Item / Service Description', 'Quantity / Area', 'Unit Rate (INR)', 'Duration', 'Amount (INR)']],
       body: tableRows,
       theme: 'grid',
       headStyles: {
@@ -125,11 +134,12 @@ export const downloadQuotationPdf = (order) => {
         lineWidth: 0.3
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 82, halign: 'left' },
+        0: { cellWidth: 8, halign: 'center' },
+        1: { cellWidth: 70, halign: 'left' },
         2: { cellWidth: 28, halign: 'center' },
-        3: { cellWidth: 30, halign: 'right' },
-        4: { cellWidth: 32, halign: 'right', fontStyle: 'bold' }
+        3: { cellWidth: 28, halign: 'right' },
+        4: { cellWidth: 22, halign: 'center' },
+        5: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
       }
     });
 

@@ -397,9 +397,20 @@ export const AdminOrderManager = () => {
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                         <div>
-                          <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{ord.eventType}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{ord.eventType}</span>
+                            {Number(ord.durationDays || ord.totalDays || 1) > 1 && (
+                              <span style={{ backgroundColor: 'rgba(201, 122, 19, 0.2)', color: '#C97A13', padding: '2px 6px', borderRadius: '6px', fontSize: '10px', fontWeight: '800' }}>
+                                ⚡ {ord.durationDays || ord.totalDays} Days
+                              </span>
+                            )}
+                          </div>
                           <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                            🗓️ {formatDateTime(ord.eventDate)}
+                            🗓️ {Number(ord.durationDays || ord.totalDays || 1) > 1 && ord.endDate ? (
+                              `${formatDateTime(ord.startDate || ord.eventDate)} to ${formatDateTime(ord.endDate)}`
+                            ) : (
+                              formatDateTime(ord.eventDate || ord.startDate)
+                            )}
                           </div>
                         </div>
                         {isConfirmedOrActive && (
@@ -545,9 +556,20 @@ export const AdminOrderManager = () => {
                         </div>
                       </td>
                       <td style={{ padding: '18px 14px' }}>
-                        <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-primary)' }}>{ord.eventType}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text-primary)' }}>{ord.eventType}</span>
+                          {Number(ord.durationDays || ord.totalDays || 1) > 1 && (
+                            <span style={{ backgroundColor: 'rgba(201, 122, 19, 0.2)', color: '#C97A13', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800' }}>
+                              ⚡ {ord.durationDays || ord.totalDays} Days
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: '600', marginTop: '2px' }}>
-                          🗓️ {formatDateTime(ord.eventDate)}
+                          🗓️ {Number(ord.durationDays || ord.totalDays || 1) > 1 && ord.endDate ? (
+                            `${formatDateTime(ord.startDate || ord.eventDate)} to ${formatDateTime(ord.endDate)}`
+                          ) : (
+                            formatDateTime(ord.eventDate || ord.startDate)
+                          )}
                         </div>
                       </td>
                       <td style={{ padding: '18px 14px', color: 'var(--text-primary)', fontSize: '14px', fontWeight: '500' }}>

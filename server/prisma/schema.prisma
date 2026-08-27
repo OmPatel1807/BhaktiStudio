@@ -154,6 +154,8 @@ model Order {
   requiresCustomTransport Boolean @default(false)
   endDate        DateTime?
   totalDays      Int                @default(1)
+  startDate      DateTime           @default(now())
+  durationDays   Int                @default(1)
   status         OrderStatus        @default(DRAFT)
   paymentStatus  PaymentStatus      @default(PENDING)
   qrCodeToken    String             @unique @default(uuid())

@@ -257,10 +257,17 @@ export const CustomerDashboard = () => {
                         </span>
                       </div>
 
-                      {/* Event Title */}
-                      <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 10px 0', color: '#FFFFFF' }}>
-                        {ord.eventType || 'Event Booking'}
-                      </h3>
+                      {/* Event Title & Duration Badge */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                        <h3 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#FFFFFF' }}>
+                          {ord.eventType || 'Event Booking'}
+                        </h3>
+                        {Number(ord.durationDays || ord.totalDays || 1) > 1 ? (
+                          <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.18)', color: '#F59E0B', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '800' }}>
+                            ⚡ {ord.durationDays || ord.totalDays} Days Event
+                          </span>
+                        ) : null}
+                      </div>
 
                       {/* Event Location & Date */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px', color: '#94A3B8' }}>
@@ -273,7 +280,11 @@ export const CustomerDashboard = () => {
                           <span>🗓️</span>
                           <strong style={{ color: '#64748B' }}>Event Date:</strong>
                           <span style={{ color: '#CBD5E1' }}>
-                            {typeof formatDateTime === 'function' ? formatDateTime(ord.eventDate) : (ord.eventDate || 'TBD')}
+                            {Number(ord.durationDays || ord.totalDays || 1) > 1 && ord.endDate ? (
+                              `${typeof formatDateTime === 'function' ? formatDateTime(ord.startDate || ord.eventDate) : (ord.startDate || ord.eventDate)} to ${typeof formatDateTime === 'function' ? formatDateTime(ord.endDate) : ord.endDate} (${ord.durationDays || ord.totalDays} Days)`
+                            ) : (
+                              typeof formatDateTime === 'function' ? formatDateTime(ord.eventDate || ord.startDate) : (ord.eventDate || ord.startDate || 'TBD')
+                            )}
                           </span>
                         </div>
                       </div>

@@ -144,7 +144,28 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
           <>
             {/* Event Info Card */}
             <div style={{ backgroundColor: 'var(--bg-input)', padding: '16px', borderRadius: '14px', marginBottom: '20px', fontSize: '14px' }}>
-              <div>🗓️ <strong>Event Type & Date:</strong> {order.eventType} ({formatDateTime(order.eventDate)})</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                <div>
+                  🗓️ <strong>Event Type:</strong> <span style={{ color: 'var(--text-primary)', fontWeight: '700' }}>{order.eventType}</span>
+                </div>
+                {(Number(order.durationDays || order.totalDays || 1) > 1) ? (
+                  <span style={{ backgroundColor: 'rgba(201, 122, 19, 0.2)', color: '#C97A13', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '800' }}>
+                    ⚡ Multi-Day Event: {order.durationDays || order.totalDays} Days
+                  </span>
+                ) : (
+                  <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#60A5FA', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: '700' }}>
+                    📅 Single-Day Event
+                  </span>
+                )}
+              </div>
+
+              <div style={{ marginTop: '6px' }}>
+                🗓️ <strong>Event Span / Date:</strong> {(Number(order.durationDays || order.totalDays || 1) > 1 && order.endDate) ? (
+                  <span>{formatDateTime(order.startDate || order.eventDate)} <strong>to</strong> {formatDateTime(order.endDate)} ({order.durationDays || order.totalDays} Days)</span>
+                ) : (
+                  <span>{formatDateTime(order.eventDate || order.startDate)}</span>
+                )}
+              </div>
               <div style={{ marginTop: '6px' }}>⏰ <strong>Timings:</strong> {order.startTime} - {order.endTime}</div>
               <div style={{ marginTop: '6px' }}>📍 <strong>Venue Address:</strong> {order.venueAddress}</div>
               {order.distanceKm && (
@@ -160,27 +181,48 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
                 Selected Services & Equipment
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {order.orderItems?.map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      backgroundColor: 'var(--bg-input)',
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontSize: '14px',
-                    }}
-                  >
-                    <span>
-                      <strong style={{ color: 'var(--text-primary)' }}>{item.serviceName}</strong>
-                      {item.widthFt && ` (${item.widthFt} x ${item.heightFt} ft)`}
-                    </span>
-                    <span style={{ fontWeight: '700', color: '#C97A13' }}>
-                      {formatCurrency((item.finalRate || item.estimatedRate || 0) * (item.quantity || 1))}
-                    </span>
-                  </div>
-                ))}
+                {order.orderItems?.map((item, idx) => {
+                  const rate = Number(item.finalRate || item.estimatedRate || 0);
+                  const qty = Number(item.quantity || 1);
+                  const days = Number(item.days || order.durationDays || order.totalDays || 1);
+                  const isSqFt = Boolean(item.widthFt && item.heightFt);
+                  const area = isSqFt ? Number(item.widthFt) * Number(item.heightFt) : 0;
+                  const itemTotal = isSqFt
+                    ? (rate > 500 && area > 1 ? rate : rate * area) * days * qty
+                    : rate * qty * days;
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        backgroundColor: 'var(--bg-input)',
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '14px',
+                      }}
+                    >
+                      <div>
+                        <div>
+                          <strong style={{ color: 'var(--text-primary)' }}>{item.serviceName}</strong>
+                          {isSqFt && ` (${item.widthFt} × ${item.heightFt} ft)`}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          {isSqFt ? (
+                            `${area} sq ft @ ${formatCurrency(rate)}/sqft × ${days} ${days > 1 ? 'Days' : 'Day'}`
+                          ) : (
+                            `${qty} ${qty > 1 ? 'Units' : 'Unit'} × ${formatCurrency(rate)}/day × ${days} ${days > 1 ? 'Days' : 'Day'}`
+                          )}
+                        </div>
+                      </div>
+                      <span style={{ fontWeight: '800', color: '#C97A13', fontSize: '15px' }}>
+                        {formatCurrency(itemTotal)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

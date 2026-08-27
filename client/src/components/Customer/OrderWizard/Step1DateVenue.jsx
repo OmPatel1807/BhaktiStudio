@@ -224,6 +224,30 @@ export const Step1DateVenue = ({
             </>
           )}
 
+          {/* Dynamic Multi-Day Event Duration Badge */}
+          {eventDetails.isMultiDay && eventDetails.eventDate && eventDetails.endDate && (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                backgroundColor: 'rgba(201, 122, 19, 0.12)',
+                border: '1px solid rgba(201, 122, 19, 0.35)',
+                padding: '12px 18px',
+                borderRadius: '12px',
+                color: '#C97A13',
+                fontSize: '14px',
+                fontWeight: '750',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span>⚡</span>
+              <span>
+                Multi-Day Event: {eventDetails.totalDays} {eventDetails.totalDays > 1 ? 'Days' : 'Day'} ({eventDetails.eventDate} to {eventDetails.endDate})
+              </span>
+            </div>
+          )}
+
           {/* Start Time Field */}
           <div style={{ position: 'relative' }}>
             <label style={{ display: 'block', fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>

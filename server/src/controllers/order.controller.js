@@ -11,12 +11,21 @@ export const sanitizeOrderFinancials = (order) => {
 
   // Recompute subtotal from raw order items
   const items = order.orderItems || order.items || [];
+  const orderDays = Number(order.durationDays || order.totalDays || 1);
   let calculatedSubtotal = 0;
   for (const item of items) {
     const rate = Number(item.finalRate || item.estimatedRate || item.rate || item.price || 0);
     const qty = Number(item.quantity || 1);
-    const days = Number(item.days || order.totalDays || 1);
-    calculatedSubtotal += rate * qty * days;
+    const itemDays = Number(item.days || orderDays || 1);
+    const width = Number(item.widthFt || item.width || 0);
+    const height = Number(item.heightFt || item.height || 0);
+    if (width > 0 && height > 0) {
+      const area = width * height;
+      const isTotalRate = rate > 500 && area > 1;
+      calculatedSubtotal += (isTotalRate ? rate : rate * area) * itemDays * qty;
+    } else {
+      calculatedSubtotal += rate * qty * itemDays;
+    }
   }
 
   // Round values
@@ -40,7 +49,7 @@ export const sanitizeOrderFinancials = (order) => {
       const gstRate = 18.0;
       const taxAmount = round2((taxableAmount * gstRate) / 100);
       const totalAmount = round2(taxableAmount + taxAmount);
-      const advanceFee = round2(totalAmount * 0.30);
+      const advanceFee = Math.round(totalAmount * 0.30);
 
       return {
         ...quotation,
@@ -245,15 +254,16 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    const evtDate = new Date(eventDate);
-    const estDays = Number(totalDays) || 1;
+    const startDateObj = new Date(eventDate || req.body.startDate || new Date());
+    const endDateObj = endDate ? new Date(endDate) : startDateObj;
+    const durationDays = req.body.durationDays ? Number(req.body.durationDays) : (Number(totalDays) || Math.max(1, Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1));
 
     const estimate = await computeServerEstimate({
       selectedServices,
       ledWidthFeet,
       ledHeightFeet,
       transportDistanceKm,
-      totalDays: estDays,
+      totalDays: durationDays,
     });
 
     const orderNumber = await generateOrderNumber();
@@ -264,9 +274,11 @@ export const createOrder = async (req, res) => {
         orderNumber,
         customerId,
         eventType,
-        eventDate: evtDate,
+        eventDate: startDateObj,
+        startDate: startDateObj,
         endDate: endDate ? new Date(endDate) : null,
-        totalDays: estDays,
+        totalDays: durationDays,
+        durationDays: durationDays,
         startTime,
         endTime,
         venueAddress,
@@ -661,15 +673,16 @@ export const updateOrder = async (req, res) => {
       });
     }
 
-    const evtDate = new Date(eventDate);
-    const estDays = Number(totalDays) || 1;
+    const startDateObj = new Date(eventDate || req.body.startDate || new Date());
+    const endDateObj = endDate ? new Date(endDate) : startDateObj;
+    const durationDays = req.body.durationDays ? Number(req.body.durationDays) : (Number(totalDays) || Math.max(1, Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1));
 
     const estimate = await computeServerEstimate({
       selectedServices,
       ledWidthFeet,
       ledHeightFeet,
       transportDistanceKm,
-      totalDays: estDays,
+      totalDays: durationDays,
     });
 
     await prisma.orderItem.deleteMany({
@@ -683,9 +696,11 @@ export const updateOrder = async (req, res) => {
       where: { id },
       data: {
         eventType,
-        eventDate: evtDate,
+        eventDate: startDateObj,
+        startDate: startDateObj,
         endDate: endDate ? new Date(endDate) : null,
-        totalDays: estDays,
+        totalDays: durationDays,
+        durationDays: durationDays,
         startTime,
         endTime,
         venueAddress,
