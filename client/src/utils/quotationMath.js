@@ -82,11 +82,13 @@ export function computeLineItemPrice(item, defaultDays = 1) {
 /**
  * Compute the equipment subtotal from order items.
  * @param {Array} orderItems - Array of order item objects
+ * @param {number} durationDays - Total days of the event
  * @returns {number} Equipment subtotal
  */
-export function computeEquipmentSubtotal(orderItems = []) {
+export function computeEquipmentSubtotal(orderItems = [], durationDays = 1) {
+  const days = Number(durationDays) || 1;
   return round2(
-    orderItems.reduce((sum, item) => sum + computeLineItemPrice(item), 0)
+    orderItems.reduce((sum, item) => sum + computeLineItemPrice(item, item.days || days), 0)
   );
 }
 
@@ -97,12 +99,14 @@ export function computeEquipmentSubtotal(orderItems = []) {
  *
  * @param {Object} quotation - The raw quotation record from the API
  * @param {Array} orderItems - The order's items array
+ * @param {number} durationDays - Total days of the event
  * @returns {Object} Rehydrated quotation with corrected subtotal, taxAmount, totalAmount, advanceFee
  */
-export function rehydrateQuotation(quotation, orderItems = []) {
+export function rehydrateQuotation(quotation, orderItems = [], durationDays = 1) {
   if (!quotation) return null;
 
-  const equipmentSubtotal = computeEquipmentSubtotal(orderItems);
+  const days = Number(durationDays) || 1;
+  const equipmentSubtotal = computeEquipmentSubtotal(orderItems, days);
 
   const setupFee = round2(quotation.setupFee || 0);
   const transportFee = round2(quotation.transportFee || 0);
@@ -133,7 +137,7 @@ export function rehydrateQuotation(quotation, orderItems = []) {
   const storedTotal = round2(quotation.totalAmount || 0);
   
   // Guard against legacy absurd values (> 10x computed equipment subtotal + overheads)
-  const isAbsurd = equipmentSubtotal > 0 && storedSubtotal > 10 * (equipmentSubtotal + additionalFeesTotal);
+  const isAbsurd = equipmentSubtotal > 0 && (storedSubtotal > 10 * (equipmentSubtotal + additionalFeesTotal) || storedSubtotal < (equipmentSubtotal / 2));
 
   const isAlreadyCorrect =
     !isAbsurd &&
@@ -173,10 +177,11 @@ export function rehydrateQuotation(quotation, orderItems = []) {
 export function resolveOrderDisplayTotal(order) {
   if (!order) return { displayTotal: 0, label: 'Estimated Total', quotation: null };
 
+  const durationDays = Number(order.durationDays || order.totalDays || 1);
   const rawQuotation = order.quotations?.[0];
 
   if (rawQuotation) {
-    const rehydrated = rehydrateQuotation(rawQuotation, order.orderItems);
+    const rehydrated = rehydrateQuotation(rawQuotation, order.orderItems, durationDays);
     return {
       displayTotal: rehydrated.totalAmount,
       label: 'Quotation Total',
@@ -188,7 +193,7 @@ export function resolveOrderDisplayTotal(order) {
   // logic the server's /orders/estimate endpoint uses, so setup/transport/
   // technician fees are represented the same way here as everywhere else.
   const orderItems = order.orderItems || [];
-  const equipmentSubtotal = computeEquipmentSubtotal(orderItems);
+  const equipmentSubtotal = computeEquipmentSubtotal(orderItems, durationDays);
   if (equipmentSubtotal === 0) {
     return { displayTotal: 0, label: 'Estimated Total', quotation: null };
   }
@@ -201,6 +206,7 @@ export function resolveOrderDisplayTotal(order) {
     .map((item) => ({
       price: Number(item.finalRate || item.estimatedRate || 0),
       quantity: Number(item.quantity || 1),
+      days: durationDays,
     }));
 
   const estimate = calculateEstimatedPricing({
@@ -210,6 +216,7 @@ export function resolveOrderDisplayTotal(order) {
     transportDistanceKm: Number(order.distanceKm || 0),
     customItems,
     ledBaseRate: ledItem ? Number(ledItem.finalRate || ledItem.estimatedRate || 0) : null,
+    totalDays: durationDays,
   });
 
   return { displayTotal: estimate.grandTotal, label: 'Estimated Total', quotation: null };

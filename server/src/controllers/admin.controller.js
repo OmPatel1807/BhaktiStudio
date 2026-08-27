@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { NotificationService } from '../services/notification.service.js';
 import { logAuditEvent } from '../utils/auditLogger.js';
+import { resolveItemBaseRateAndTotal } from '../services/pricingEngine.js';
 
 const prisma = new PrismaClient();
 
@@ -129,13 +130,12 @@ export const updateOrderQuotation = async (req, res) => {
     });
 
     const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+    const orderDays = Number(order.durationDays || order.totalDays || 1);
 
     let itemsSubtotal = 0;
     for (const item of dbOrderItems) {
-      const rate = Number(item.finalRate || item.estimatedRate || 0);
-      const qty = Number(item.quantity || 1);
-      const days = Number(order.totalDays || 1);
-      itemsSubtotal += rate * qty * days;
+      const resolved = resolveItemBaseRateAndTotal(item, orderDays);
+      itemsSubtotal += resolved.total;
     }
     itemsSubtotal = round2(itemsSubtotal);
 

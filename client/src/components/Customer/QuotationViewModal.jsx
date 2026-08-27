@@ -10,7 +10,9 @@ export const QuotationViewModal = ({ order, quotation: rawQuotation, isOpen, onC
 
   if (!isOpen || !rawQuotation) return null;
 
-  const quotation = rehydrateQuotation(rawQuotation, order?.orderItems);
+  const durationDays = Number(order?.durationDays || order?.totalDays || 1);
+  const itemsList = order?.orderItems || order?.items || order?.selectedServices || [];
+  const quotation = rehydrateQuotation(rawQuotation, itemsList, durationDays);
 
   const handleResponse = async (action) => {
     setLoading(true);

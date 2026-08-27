@@ -10,10 +10,12 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
   if (!isOpen || !order) return null;
 
   const rawQuotation = order.quotations?.[0];
+  const durationDays = Number(order.durationDays || order.totalDays || 1);
 
   // LOOP 40: Unified rehydration — single source of truth
-  const latestQuotation = rehydrateQuotation(rawQuotation, order.orderItems);
-  const equipmentTotal = computeEquipmentSubtotal(order.orderItems);
+  const itemsList = order.orderItems || order.items || order.selectedServices || [];
+  const latestQuotation = rehydrateQuotation(rawQuotation, itemsList, durationDays);
+  const equipmentTotal = computeEquipmentSubtotal(itemsList, durationDays);
 
   const beforePhotos = (order.executionMedia || []).filter(m => m.mediaType === 'BEFORE_SETUP');
   const afterPhotos = (order.executionMedia || []).filter(m => m.mediaType === 'AFTER_SETUP');

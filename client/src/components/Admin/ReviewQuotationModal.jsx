@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { resolveItemBaseRateAndTotal } from '../../utils/quotationMath';
 
 export const ReviewQuotationModal = ({ order, isOpen, onClose, onSuccess }) => {
   const { token } = useAuth();
@@ -18,24 +19,19 @@ export const ReviewQuotationModal = ({ order, isOpen, onClose, onSuccess }) => {
   useEffect(() => {
     if (order) {
       const rawItems = order.orderItems || order.items || order.services || [];
+      const orderDays = Number(order.durationDays || order.totalDays || 1);
       setItems(
         rawItems.map((item) => {
-          const isSqFt = item.unit === 'sqft' || item.serviceName?.toLowerCase().includes('led') || item.name?.toLowerCase().includes('led');
-          const width = Number(item.widthFt || item.ledWidth || item.width || 0);
-          const height = Number(item.heightFt || item.ledHeight || item.height || 0);
-          const calculatedQty = isSqFt && width > 0 && height > 0
-            ? width * height
-            : (Number(item.quantity) || 1);
-
+          const resolved = resolveItemBaseRateAndTotal(item, orderDays);
           return {
             id: item.id,
-            name: item.serviceName || item.name || item.service?.name || 'Service Item',
-            isSqFt,
-            unitLabel: isSqFt ? 'sq ft' : 'units',
-            estimatedRate: Number(item.estimatedRate || item.baseRate || 0),
-            finalRate: Number(item.finalRate || item.estimatedRate || item.baseRate || 0),
-            quantity: calculatedQty,
-            days: Number(order.totalDays || item.days || 1),
+            name: resolved.name || item.serviceName || item.name || item.service?.name || 'Service Item',
+            isSqFt: resolved.isArea,
+            unitLabel: resolved.isArea ? 'sq ft' : 'units',
+            estimatedRate: resolved.baseRate,
+            finalRate: resolved.baseRate,
+            quantity: resolved.isArea ? resolved.area : resolved.qty,
+            days: resolved.days,
           };
         })
       );

@@ -16,7 +16,9 @@ export const PaymentModal = ({ order, quotation: rawQuotation, isOpen, onClose, 
   const [errorMsg, setErrorMsg] = useState(null);
 
   const quotation = useMemo(() => {
-    return rehydrateQuotation(rawQuotation || order?.latestQuotation || order?.approvedQuotation, order?.orderItems);
+    const durationDays = Number(order?.durationDays || order?.totalDays || 1);
+    const itemsList = order?.orderItems || order?.items || order?.selectedServices || [];
+    return rehydrateQuotation(rawQuotation || order?.latestQuotation || order?.approvedQuotation, itemsList, durationDays);
   }, [rawQuotation, order]);
 
   useEffect(() => {
