@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
-import { PricingEngineService } from '../services/pricingEngine.js';
+import { PricingEngineService, resolveItemBaseRateAndTotal } from '../services/pricingEngine.js';
 import { NotificationService } from '../services/notification.service.js';
 import { logAuditEvent } from '../utils/auditLogger.js';
 
@@ -14,18 +14,8 @@ export const sanitizeOrderFinancials = (order) => {
   const orderDays = Number(order.durationDays || order.totalDays || 1);
   let calculatedSubtotal = 0;
   for (const item of items) {
-    const rate = Number(item.finalRate || item.estimatedRate || item.rate || item.price || 0);
-    const qty = Number(item.quantity || 1);
-    const itemDays = Number(item.days || orderDays || 1);
-    const width = Number(item.widthFt || item.width || 0);
-    const height = Number(item.heightFt || item.height || 0);
-    if (width > 0 && height > 0) {
-      const area = width * height;
-      const isTotalRate = rate > 500 && area > 1;
-      calculatedSubtotal += (isTotalRate ? rate : rate * area) * itemDays * qty;
-    } else {
-      calculatedSubtotal += rate * qty * itemDays;
-    }
+    const itemCalculation = resolveItemBaseRateAndTotal(item, orderDays);
+    calculatedSubtotal += itemCalculation.total;
   }
 
   // Round values
@@ -36,9 +26,9 @@ export const sanitizeOrderFinancials = (order) => {
   if (order.quotations && order.quotations.length > 0) {
     order.quotations = order.quotations.map((quotation) => {
       // Setup overheads
-      const setupFee = round2(quotation.setupFee ?? 3000);
-      const transportFee = round2(quotation.transportFee ?? 100);
-      const technicianFee = round2(quotation.technicianFee ?? 2000);
+      const setupFee = round2(quotation.setupFee ?? 2000);
+      const transportFee = round2(quotation.transportFee ?? (order.distanceKm ? Number(order.distanceKm) * 50 : 100));
+      const technicianFee = round2(quotation.technicianFee ?? 0);
 
       // Base for Tax = Subtotal + Rigging + Transport + Technician
       const baseForTax = calculatedSubtotal + setupFee + transportFee + technicianFee;
@@ -119,23 +109,21 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
     if (catalogMatch) {
       if (catalogMatch.category === 'DISPLAY' || catalogMatch.name.toUpperCase().includes('LED')) {
         ledBaseRate = Number(catalogMatch.baseRate);
-        const areaSqFt = widthFeet * heightFeet;
         const perSqFtRate = Number(catalogMatch.baseRate);
-        const totalLedRate = areaSqFt > 0 ? (areaSqFt * perSqFtRate * totalDays) : (perSqFtRate * totalDays);
         itemizedList.push({
           serviceName: catalogMatch.name,
           widthFt: widthFeet,
           heightFt: heightFeet,
           quantity: 1,
-          estimatedRate: totalLedRate,
+          estimatedRate: perSqFtRate,
         });
       } else {
         const qty = Number(item.quantity) || 1;
         const days = Number(item.days || totalDays) || 1;
-        const itemCost = Number(item.price || (catalogMatch.baseRate * qty * days));
+        const unitBaseRate = Number(catalogMatch.baseRate);
         customItems.push({
           name: catalogMatch.name,
-          unitRate: Number(catalogMatch.baseRate),
+          unitRate: unitBaseRate,
           quantity: qty,
           days,
         });
@@ -144,7 +132,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
           widthFt: null,
           heightFt: null,
           quantity: qty,
-          estimatedRate: itemCost,
+          estimatedRate: unitBaseRate,
         });
       }
     } else if (item.name || item.serviceName) {
@@ -152,9 +140,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
       const days = Number(item.days || totalDays) || 1;
       const w = Number(item.width || item.widthFt || 0);
       const h = Number(item.height || item.heightFt || 0);
-      const area = (w > 0 && h > 0) ? (w * h) : 1;
       const unitRate = Number(item.unitRate || item.baseRate || item.price || 0);
-      const totalCost = item.price ? Number(item.price) : (unitRate * area * qty * days);
 
       if (w > 0 && h > 0) {
         if (!ledBaseRate) ledBaseRate = unitRate;
@@ -163,7 +149,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
           widthFt: w,
           heightFt: h,
           quantity: qty,
-          estimatedRate: totalCost,
+          estimatedRate: unitRate,
         });
       } else {
         customItems.push({
@@ -177,7 +163,7 @@ async function computeServerEstimate({ selectedServices = [], ledWidthFeet, ledH
           widthFt: null,
           heightFt: null,
           quantity: qty,
-          estimatedRate: totalCost,
+          estimatedRate: unitRate,
         });
       }
     }

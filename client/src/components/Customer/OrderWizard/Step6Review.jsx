@@ -1,5 +1,6 @@
 import React from 'react';
 import { formatCurrency } from '../../../utils/formatters';
+import { resolveItemBaseRateAndTotal } from '../../../utils/quotationMath';
 
 export const Step6Review = ({
   eventDetails,
@@ -62,13 +63,14 @@ export const Step6Review = ({
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {safeServices.map((service, idx) => {
-              const isLed = service?.category === 'DISPLAY' || service?.name?.toUpperCase().includes('LED');
-              const area = isLed ? Number(specifications?.ledWidthFeet || 12) * Number(specifications?.ledHeightFeet || 8) : 0;
-              const unitRate = Number(service?.baseRate || service?.price || 0);
-              const qty = Number(service?.quantity || 1);
-              const lineTotal = isLed
-                ? (unitRate > 500 && area > 1 ? unitRate : unitRate * area) * durationDays * qty
-                : unitRate * qty * durationDays;
+              const resolved = resolveItemBaseRateAndTotal({
+                ...service,
+                quantity: service.quantity || 1,
+                days: durationDays,
+                widthFt: specifications?.ledWidthFeet || 12,
+                heightFt: specifications?.ledHeightFeet || 8,
+              }, durationDays);
+              const { name, qty, isArea, width, height, area, baseRate, total } = resolved;
 
               return (
                 <div
@@ -85,17 +87,17 @@ export const Step6Review = ({
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{service?.name}</div>
+                    <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{name || service?.name}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      {isLed ? (
-                        `${area} sq ft (${specifications?.ledWidthFeet}×${specifications?.ledHeightFeet} ft) @ ${formatCurrency(unitRate)}/sqft × ${durationDays} ${durationDays > 1 ? 'Days' : 'Day'}`
+                      {isArea ? (
+                        `${area} sq ft (${width}×${height} ft) @ ${formatCurrency(baseRate)}/sqft${durationDays > 1 ? ` × ${durationDays} Days` : ''}`
                       ) : (
-                        `${qty} ${qty > 1 ? 'Units' : 'Unit'} × ${formatCurrency(unitRate)}/day × ${durationDays} ${durationDays > 1 ? 'Days' : 'Day'}`
+                        `${qty} ${qty > 1 ? 'Units' : 'Unit'} × ${formatCurrency(baseRate)}/day${durationDays > 1 ? ` × ${durationDays} Days` : ''}`
                       )}
                     </div>
                   </div>
                   <div style={{ fontWeight: '800', color: '#C97A13' }}>
-                    {formatCurrency(lineTotal)}
+                    {formatCurrency(total)}
                   </div>
                 </div>
               );

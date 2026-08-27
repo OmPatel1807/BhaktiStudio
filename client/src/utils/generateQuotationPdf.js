@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { resolveItemBaseRateAndTotal } from './quotationMath.js';
 
 export const downloadQuotationPdf = (order) => {
   try {
@@ -18,12 +19,12 @@ export const downloadQuotationPdf = (order) => {
     const textDark = [15, 23, 42];     // Slate 900
     const textMuted = [100, 116, 139];  // Slate 500
     const bgLight = [248, 250, 252];    // Slate 50
+    const borderGray = [226, 232, 240]; // Slate 200
 
-    // 1. TOP HEADER BANNER
+    // 1. TOP HEADER & STUDIO BRANDING
     doc.setFillColor(...navyHeader);
-    doc.rect(0, 0, 210, 44, 'F');
+    doc.rect(0, 0, 210, 42, 'F');
 
-    // Studio Name & Subtitle
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(...goldPrimary);
@@ -32,30 +33,30 @@ export const downloadQuotationPdf = (order) => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(203, 213, 225);
-    doc.text('PREMIUM EVENT PRODUCTION & CINEMATOGRAPHY', 14, 25);
-    doc.text('Surat, Gujarat, India  |  contact@bhaktistudio.com', 14, 31);
-    doc.text('GSTIN: 24AAACB0000A1Z5', 14, 37);
+    doc.text('Smart Production & Audio-Visual Solutions', 14, 25);
+    doc.text('Web: bhakti-studio.com | Contact: +91 98765 43210 | Surat, Gujarat', 14, 30);
 
-    // Document Title & Reference (Right Side)
+    // Document Meta Header
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setTextColor(255, 255, 255);
-    doc.text('OFFICIAL QUOTATION', 196, 18, { align: 'right' });
+    doc.text('OFFICIAL ESTIMATE & QUOTATION', 196, 18, { align: 'right' });
 
-    const orderCode = order.orderNumber || `BS-2026-${String(order.id || '00001').padStart(5, '0')}`;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
+    doc.setTextColor(...goldPrimary);
+    doc.text(`Ref No: ${order.orderNumber || 'BS-QUOTATION'}`, 196, 25, { align: 'right' });
+    
     doc.setTextColor(203, 213, 225);
-    doc.text(`Quotation Ref: ${orderCode}`, 196, 26, { align: 'right' });
-    doc.text(`Issued Date: ${new Date().toLocaleDateString('en-IN')}`, 196, 32, { align: 'right' });
-    doc.text('Status: APPROVED & ISSUED', 196, 38, { align: 'right' });
+    const issueDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    doc.text(`Issue Date: ${issueDate}`, 196, 30, { align: 'right' });
 
     // Gold Divider Line
     doc.setDrawColor(...goldPrimary);
     doc.setLineWidth(0.8);
-    doc.line(0, 44, 210, 44);
+    doc.line(0, 42, 210, 42);
 
-    // 2. CLIENT & EVENT DETAILS CARD
+    // 2. EVENT & CLIENT SUMMARY BOX
     doc.setFillColor(...bgLight);
     doc.roundedRect(14, 50, 182, 28, 2, 2, 'F');
     doc.setDrawColor(226, 232, 240);
@@ -93,24 +94,20 @@ export const downloadQuotationPdf = (order) => {
       { name: order.eventType || 'Complete Event Setup', quantity: 1, rate: order.grandTotal || 43660 }
     ];
 
+    let calculatedItemsSubtotal = 0;
+
     const tableRows = itemsList.map((it, idx) => {
-      const name = it.name || it.serviceName || it.title || `Production Service #${idx + 1}`;
-      const isSqFt = it.unit === 'sqft' || name.toLowerCase().includes('led') || (it.serviceName || '').toLowerCase().includes('led');
-      const width = Number(it.widthFt || it.ledWidth || it.width || (isSqFt ? order.ledWidthFeet : 0) || 0);
-      const height = Number(it.heightFt || it.ledHeight || it.height || (isSqFt ? order.ledHeightFeet : 0) || 0);
-      
-      const qtyVal = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
-      const qtyStr = isSqFt ? `${qtyVal} sq ft` : `${qtyVal} ${qtyVal > 1 ? 'Units' : 'Unit'}`;
-      const rateVal = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
-      const totalVal = qtyVal * rateVal * days;
+      const resolved = resolveItemBaseRateAndTotal(it, days);
+      calculatedItemsSubtotal += resolved.total;
+      const qtyStr = resolved.isArea ? `${resolved.area} sq ft` : `${resolved.qty} ${resolved.qty > 1 ? 'Units' : 'Unit'}`;
 
       return [
         idx + 1,
-        name,
+        resolved.name || `Production Service #${idx + 1}`,
         qtyStr,
-        `Rs. ${rateVal.toLocaleString('en-IN')}`,
+        `Rs. ${resolved.baseRate.toLocaleString('en-IN')}`,
         `${days} ${days > 1 ? 'Days' : 'Day'}`,
-        `Rs. ${totalVal.toLocaleString('en-IN')}`
+        `Rs. ${resolved.total.toLocaleString('en-IN')}`
       ];
     });
 
@@ -146,21 +143,9 @@ export const downloadQuotationPdf = (order) => {
     // 4. FINANCIAL BREAKDOWN & OVERHEADS SUMMARY
     const finalY = doc.lastAutoTable.finalY + 8;
     
-    let calculatedItemsSubtotal = 0;
-    itemsList.forEach((it) => {
-      const name = it.name || it.serviceName || it.title || '';
-      const isSqFt = it.unit === 'sqft' || name.toLowerCase().includes('led') || (it.serviceName || '').toLowerCase().includes('led');
-      const width = Number(it.widthFt || it.ledWidth || it.width || (isSqFt ? order.ledWidthFeet : 0) || 0);
-      const height = Number(it.heightFt || it.ledHeight || it.height || (isSqFt ? order.ledHeightFeet : 0) || 0);
-      const qtyVal = isSqFt && width > 0 && height > 0 ? (width * height) : Number(it.quantity || it.qty || 1);
-      const rateVal = Number(it.rate || it.unitPrice || it.price || it.finalRate || it.estimatedRate || 0);
-      const lineTotal = qtyVal * rateVal * days;
-      calculatedItemsSubtotal += lineTotal;
-    });
-
-    const setupCost = Number(quotation.setupFee ?? quotation.setupCost ?? order.setupCost ?? 3000);
+    const setupCost = Number(quotation.setupFee ?? quotation.setupCost ?? order.setupCost ?? 2000);
     const transportCost = Number(quotation.transportFee ?? quotation.transportCost ?? quotation.logisticsCost ?? order.logisticsCost ?? 100);
-    const techCost = Number(quotation.technicianFee ?? quotation.technicianCost ?? quotation.techSupportCost ?? order.techSupportCost ?? 2000);
+    const techCost = Number(quotation.technicianFee ?? quotation.technicianCost ?? quotation.techSupportCost ?? order.techSupportCost ?? 0);
     const discountVal = Number(quotation.discounts ?? quotation.discount ?? order.discount ?? 0);
 
     const totalOverheads = setupCost + transportCost + techCost;

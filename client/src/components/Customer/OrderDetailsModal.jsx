@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { getAdvancePercentage } from '../../services/pricingService';
-import { rehydrateQuotation, computeEquipmentSubtotal, computeLineItemPrice } from '../../utils/quotationMath';
+import { rehydrateQuotation, computeEquipmentSubtotal, resolveItemBaseRateAndTotal } from '../../utils/quotationMath';
 
 export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, onMarkCompleted }) => {
   const [activeTab, setActiveTab] = useState('details'); // 'details' | 'proof'
@@ -181,31 +181,13 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
                 Selected Services & Equipment
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {order.orderItems?.map((item, idx) => {
-                  const qty = Number(item.quantity) || 1;
-                  const days = Number(item.days || order.durationDays || order.totalDays) || 1;
-                  const isArea = Boolean(item.pricingType === 'AREA_BASED' || (item.widthFt && item.heightFt) || (item.width && item.height));
-                  const width = Number(item.widthFt || item.width || (isArea ? (order.ledWidthFeet || 12) : 0));
-                  const height = Number(item.heightFt || item.height || (isArea ? (order.ledHeightFeet || 8) : 0));
-                  const sqft = isArea ? (width > 0 && height > 0 ? width * height : 96) : null;
-
-                  // Item line total derived deterministically matching computeLineItemPrice
-                  const itemTotal = computeLineItemPrice(item);
-
-                  // Derive pure single-unit base rate safely to prevent double-multiplication
-                  let baseUnitRate = Number(item.baseRate || item.unitRate || 0);
-                  if (!baseUnitRate) {
-                    const rawRate = Number(item.finalRate || item.estimatedRate || item.price || item.rate || 0);
-                    if (isArea && sqft > 0) {
-                      baseUnitRate = rawRate > 500 ? Math.round(rawRate / sqft) : (rawRate || Math.round(itemTotal / (sqft * days * qty)));
-                    } else {
-                      baseUnitRate = rawRate || Math.round(itemTotal / (qty * days));
-                    }
-                  }
+                {(order.orderItems || order.items || order.selectedServices || [])?.map((item, idx) => {
+                  const resolved = resolveItemBaseRateAndTotal(item, order.durationDays || order.totalDays || 1);
+                  const { name, qty, days, isArea, width, height, area, baseRate, total } = resolved;
 
                   return (
                     <div
-                      key={idx}
+                      key={item.id || idx}
                       style={{
                         backgroundColor: 'var(--bg-input)',
                         padding: '12px 16px',
@@ -220,19 +202,19 @@ export const OrderDetailsModal = ({ order, isOpen, onClose, onOpenPaymentModal, 
                       <div>
                         <div>
                           <strong style={{ color: 'var(--text-primary)' }}>
-                            {item.serviceName || item.name || item.title || 'Service Item'}
+                            {name || 'Service Item'}
                           </strong>
                           {isArea && width > 0 && height > 0 && ` (${width} × ${height} ft)`}
                         </div>
                         <div style={{ fontSize: '12px', color: '#C97A13', fontWeight: '600', marginTop: '2px', fontFamily: 'monospace' }}>
-                          {isArea && sqft > 0
-                            ? `${sqft} sq ft (${width}×${height} ft) @ ₹${baseUnitRate.toLocaleString('en-IN')}/sqft${days > 1 ? ` × ${days} Days` : ''}`
-                            : `${qty} ${qty > 1 ? 'Units' : 'Unit'} × ₹${baseUnitRate.toLocaleString('en-IN')}/day${days > 1 ? ` × ${days} Days` : ''}`
+                          {isArea
+                            ? `${area} sq ft (${width || 12}×${height || 8} ft) @ ₹${baseRate.toLocaleString('en-IN')}/sqft${days > 1 ? ` × ${days} Days` : ''}`
+                            : `${qty} ${qty > 1 ? 'Units' : 'Unit'} × ₹${baseRate.toLocaleString('en-IN')}/day${days > 1 ? ` × ${days} Days` : ''}`
                           }
                         </div>
                       </div>
                       <span style={{ fontWeight: '800', color: 'var(--text-primary)', fontSize: '15px' }}>
-                        ₹{itemTotal.toLocaleString('en-IN')}.00
+                        ₹{total.toLocaleString('en-IN')}.00
                       </span>
                     </div>
                   );

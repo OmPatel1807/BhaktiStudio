@@ -10,26 +10,82 @@ const SETTINGS_PATH = path.resolve(__dirname, '../../../config/settings.json');
 
 const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
 
+export const KNOWN_SERVICE_BASE_RATES = {
+  'Stage Lighting Package': 6000,
+  'Line Array Sound System': 8000,
+  'Sony FX3 Cinema Camera': 3500,
+  'Live Streaming Unit': 5000,
+  'LED Wall P3.9': 150,
+};
+
+/**
+ * Single source of truth for resolving base unit rate and line item total safely.
+ */
+export const resolveItemBaseRateAndTotal = (item, defaultDays = 1) => {
+  if (!item) return { baseRate: 0, total: 0, days: 1, qty: 1, isArea: false, area: 1 };
+  const name = item.serviceName || item.name || item.title || '';
+  const qty = Number(item.quantity) || 1;
+  const days = Number(item.days || defaultDays) || 1;
+  const isArea = Boolean(item.pricingType === 'AREA_BASED' || (item.widthFt && item.heightFt) || (item.width && item.height) || name.toUpperCase().includes('LED'));
+  const width = Number(item.widthFt || item.width || (isArea ? 12 : 0));
+  const height = Number(item.heightFt || item.height || (isArea ? 8 : 0));
+  const area = isArea ? (width > 0 && height > 0 ? width * height : 96) : 1;
+
+  let baseRate = 0;
+
+  // 1. Exact catalog match check
+  for (const [knownName, rate] of Object.entries(KNOWN_SERVICE_BASE_RATES)) {
+    if (name.toLowerCase().includes(knownName.toLowerCase()) || knownName.toLowerCase().includes(name.toLowerCase())) {
+      baseRate = rate;
+      break;
+    }
+  }
+
+  // 2. Derive base rate from raw stored rate if not in known map
+  if (!baseRate) {
+    const rawRate = Number(item.unitRate || item.baseRate || item.finalRate || item.estimatedRate || item.price || item.rate || 0);
+    if (isArea) {
+      if (rawRate > 1000) {
+        baseRate = Math.round(rawRate / (area * days * qty));
+      } else if (rawRate > 500) {
+        baseRate = Math.round(rawRate / days);
+      } else {
+        baseRate = rawRate || 150;
+      }
+    } else {
+      if (rawRate > 15000 && days > 1) {
+        baseRate = Math.round(rawRate / (qty * days));
+      } else {
+        baseRate = rawRate;
+      }
+    }
+  }
+
+  const total = isArea
+    ? round2(area * baseRate * days * qty)
+    : round2(qty * baseRate * days);
+
+  return {
+    name,
+    baseRate,
+    total,
+    days,
+    qty,
+    isArea,
+    width,
+    height,
+    area,
+  };
+};
+
 /**
  * Standardized line-item price evaluation function (Single Source of Truth)
  * @param {Object} item - Service or equipment item object
+ * @param {number} defaultDays - Order duration days
  * @returns {number} 2-decimal rounded line item total
  */
-export const computeLineItemPrice = (item) => {
-  if (!item) return 0;
-  const unitRate = Number(item.unitRate || item.baseRate || item.price || item.estimatedRate || item.finalRate || 0);
-  const days = Number(item.days) || 1;
-  const qty = Number(item.quantity) || 1;
-  const width = Number(item.width || item.widthFt || 0);
-  const height = Number(item.height || item.heightFt || 0);
-
-  if (width > 0 && height > 0) {
-    const area = width * height;
-    const isTotalRate = unitRate > 500 && area > 1;
-    const itemTotal = isTotalRate ? unitRate : (unitRate * area);
-    return round2(itemTotal * days * qty);
-  }
-  return round2(unitRate * qty * days);
+export const computeLineItemPrice = (item, defaultDays = 1) => {
+  return resolveItemBaseRateAndTotal(item, defaultDays).total;
 };
 
 export class PricingEngineService {
