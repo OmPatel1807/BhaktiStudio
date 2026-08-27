@@ -129,6 +129,7 @@ export function rehydrateQuotation(quotation, orderItems = [], durationDays = 1)
   const remainingFee = round2(totalAmount - advanceFee);
 
   // Check if the stored values already match the calculated values
+  const storedSubtotal = round2(quotation.subtotal || 0);
   const storedTotal = round2(quotation.totalAmount || 0);
   
   // Guard against legacy absurd values (> 10x computed equipment subtotal + overheads)
