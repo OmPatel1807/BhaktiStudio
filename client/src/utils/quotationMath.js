@@ -121,17 +121,8 @@ export function rehydrateQuotation(quotation, orderItems = [], durationDays = 1)
   const grossSubtotal = round2(equipmentSubtotal + additionalFeesTotal);
   const taxableAmount = Math.max(0, round2(grossSubtotal - discounts));
 
-  // Detect the GST rate: reverse-engineer from stored values, fallback to settings
-  const storedSubtotal = round2(quotation.subtotal || 0);
-  const storedTax = round2(quotation.taxAmount || 0);
-  let gstRate = getTaxPercentage();
-  if (storedSubtotal > 0 && storedTax > 0) {
-    const inferredRate = (storedTax / storedSubtotal) * 100;
-    if (inferredRate >= 1 && inferredRate <= 50) {
-      gstRate = Math.round(inferredRate * 100) / 100;
-    }
-  }
-
+  // Standard 18% GST (avoid stale inferred rate drift)
+  const gstRate = 18.0;
   const taxAmount = round2((taxableAmount * gstRate) / 100);
   const totalAmount = round2(taxableAmount + taxAmount);
   const advanceFee = round2((totalAmount * getAdvancePercentage()) / 100);
