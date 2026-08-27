@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { sendTransactionalEmail, emailTemplates } from './email.service.js';
 
 const prisma = new PrismaClient();
 
@@ -31,15 +32,14 @@ class InAppProvider {
 class EmailProvider {
   static async send({ toEmail, subject, htmlContent }) {
     try {
-      if (process.env.EMAIL_ENABLED !== 'true') {
-        console.log(`[EmailProvider Simulated]: To: ${toEmail} | Subject: ${subject}`);
-        return { success: true, simulated: true };
-      }
-      // Nodemailer driver execution logic
-      console.log(`[EmailProvider Sent]: To: ${toEmail} | Subject: ${subject}`);
-      return { success: true };
+      return await sendTransactionalEmail({
+        to: toEmail,
+        subject,
+        html: htmlContent,
+      });
     } catch (err) {
       console.error('[EmailProvider Error]:', err.message);
+      return { success: false, error: err.message };
     }
   }
 }
@@ -90,23 +90,36 @@ export class NotificationService {
       try {
         switch (eventType) {
           case 'ORDER_SUBMITTED':
-            // Notify Admin
+            // Notify Admin In-App
             await InAppProvider.send({
               userId: payload.adminId || 'admin',
               title: '🛒 New Customer Order Submitted',
               message: `Order #${payload.orderNumber} submitted by ${payload.customerName}.`,
-              actionUrl: `/admin/quotation/${payload.orderId}`,
+              actionUrl: `/admin/orders`,
               type: 'ORDER_SUBMITTED',
             });
-            await EmailProvider.send({
-              toEmail: 'admin@bhaktistudio.com',
-              subject: `[Bhakti Studio] New Order #${payload.orderNumber}`,
-              htmlContent: `<h2>New Order Submitted</h2><p>Order #${payload.orderNumber} by ${payload.customerName}.</p>`,
-            });
+            // Notify Admin Email
+            {
+              const emailData = emailTemplates.adminOrderAlert(payload);
+              await EmailProvider.send({
+                toEmail: process.env.EMAIL_ADMIN || 'admin@bhaktistudio.com',
+                subject: emailData.subject,
+                htmlContent: emailData.html,
+              });
+            }
+            // Customer Email Booking Inquiry Acknowledgment
+            if (payload.customerEmail) {
+              const emailData = emailTemplates.orderReceived(payload);
+              await EmailProvider.send({
+                toEmail: payload.customerEmail,
+                subject: emailData.subject,
+                htmlContent: emailData.html,
+              });
+            }
             break;
 
           case 'QUOTATION_APPROVED':
-            // Notify Customer
+            // Notify Customer In-App
             await InAppProvider.send({
               userId: payload.customerId,
               title: '📄 Quotation Ready for Review',
@@ -123,7 +136,7 @@ export class NotificationService {
             break;
 
           case 'WORKER_ASSIGNED':
-            // Notify Worker
+            // Notify Worker In-App
             await InAppProvider.send({
               userId: payload.workerUserId,
               title: '👷 New Event Assignment Dispatched',
@@ -131,6 +144,15 @@ export class NotificationService {
               actionUrl: `/worker/dashboard`,
               type: 'WORKER_ASSIGNED',
             });
+            // Notify Worker Email
+            if (payload.workerEmail) {
+              const emailData = emailTemplates.crewAssigned({ name: payload.workerName }, payload);
+              await EmailProvider.send({
+                toEmail: payload.workerEmail,
+                subject: emailData.subject,
+                htmlContent: emailData.html,
+              });
+            }
             await WhatsAppProvider.send({
               phone: payload.workerPhone || '919876543210',
               templateName: 'job_assigned',
@@ -140,18 +162,27 @@ export class NotificationService {
             break;
 
           case 'PAYMENT_RECEIVED':
-            // Notify Admin & Customer
+            // Notify Customer In-App
             await InAppProvider.send({
               userId: payload.customerId,
               title: '💳 Payment Received Successfully',
-              message: `Payment of ₹${payload.amount} received for Order #${payload.orderNumber}.`,
+              message: `Payment of Rs. ${payload.amount} received for Order #${payload.orderNumber}.`,
               actionUrl: `/customer/invoice/${payload.orderId}`,
               type: 'PAYMENT_RECEIVED',
             });
+            // Notify Customer Email
+            if (payload.customerEmail) {
+              const emailData = emailTemplates.paymentReceived(payload);
+              await EmailProvider.send({
+                toEmail: payload.customerEmail,
+                subject: emailData.subject,
+                htmlContent: emailData.html,
+              });
+            }
             break;
 
           case 'WORKER_APPROVED':
-            // Notify Worker
+            // Notify Worker In-App
             await InAppProvider.send({
               userId: payload.workerUserId,
               title: '👷 Crew Account Approved',
@@ -174,6 +205,15 @@ export class NotificationService {
               actionUrl: `/customer/dashboard`,
               type: 'QUOTATION_ISSUED',
             });
+            // Notify Customer Email
+            if (payload.customerEmail) {
+              const emailData = emailTemplates.quotationIssued(payload);
+              await EmailProvider.send({
+                toEmail: payload.customerEmail,
+                subject: emailData.subject,
+                htmlContent: emailData.html,
+              });
+            }
             break;
 
           case 'ORDER_REJECTED':
@@ -204,6 +244,15 @@ export class NotificationService {
               actionUrl: `/worker/dashboard`,
               type: 'WORKER_PAYOUT_SETTLED',
             });
+            // Notify Worker Email
+            if (payload.workerEmail) {
+              const emailData = emailTemplates.payoutSettled(payload);
+              await EmailProvider.send({
+                toEmail: payload.workerEmail,
+                subject: emailData.subject,
+                htmlContent: emailData.html,
+              });
+            }
             break;
 
           default:

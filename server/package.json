@@ -21,7 +21,8 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "google-auth-library": "^9.11.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "resend": "^6.24.0"
   },
   "devDependencies": {
     "prisma": "^5.16.0"

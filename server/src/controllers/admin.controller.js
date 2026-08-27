@@ -205,8 +205,11 @@ export const updateOrderQuotation = async (req, res) => {
       eventType: 'QUOTATION_ISSUED',
       payload: {
         customerId: order.customerId,
+        customerName: order.customer?.name || 'Customer',
+        customerEmail: order.customer?.email,
         orderNumber: order.orderNumber,
         eventType: order.eventType,
+        grandTotal,
       },
     });
 
@@ -270,7 +273,8 @@ export const createWorkerPayout = async (req, res) => {
       eventType: 'WORKER_PAYOUT_SETTLED',
       payload: {
         workerId,
-        workerName: worker.name,
+        workerName: worker.name || 'Crew Member',
+        workerEmail: worker.email,
         totalAmount: totalVal,
         payoutId: payout.id,
       },

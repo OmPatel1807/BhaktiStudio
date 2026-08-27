@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { WorkerAssignmentService } from '../services/workerAssignmentService.js';
+import { NotificationService } from '../services/notification.service.js';
 
 const prisma = new PrismaClient();
 
@@ -114,6 +115,31 @@ export const createAssignments = async (req, res) => {
         orderNumber: order.orderNumber,
       };
     });
+
+    // Dispatch crew assignment notifications asynchronously after successful transaction commit
+    try {
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (order) {
+        for (const assignmentRecord of result.assignments) {
+          await NotificationService.dispatch({
+            eventType: 'WORKER_ASSIGNED',
+            payload: {
+              workerUserId: assignmentRecord.workerProfile.user.id,
+              workerEmail: assignmentRecord.workerProfile.user.email,
+              workerName: assignmentRecord.workerProfile.user.name || 'Crew Member',
+              workerPhone: assignmentRecord.workerProfile.user.phone,
+              role: assignmentRecord.assignedRole,
+              orderNumber: order.orderNumber,
+              eventType: order.eventType,
+              eventDate: order.eventDate,
+              venueAddress: order.venueAddress,
+            },
+          });
+        }
+      }
+    } catch (dispatchError) {
+      console.error('Failed to dispatch worker assignments notification:', dispatchError);
+    }
 
     return res.status(201).json({
       success: true,

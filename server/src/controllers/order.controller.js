@@ -268,7 +268,7 @@ export const createOrder = async (req, res) => {
       },
     });
 
-    // Notify Admin
+    // Notify Admin & Customer
     const customerUser = await prisma.user.findUnique({ where: { id: customerId } });
     await NotificationService.dispatch({
       eventType: 'ORDER_SUBMITTED',
@@ -276,6 +276,10 @@ export const createOrder = async (req, res) => {
         orderId: order.id,
         orderNumber: order.orderNumber,
         customerName: customerUser?.name || 'Customer',
+        customerEmail: customerUser?.email,
+        eventDate: order.eventDate,
+        venueAddress: order.venueAddress,
+        eventType: order.eventType,
       },
     });
 

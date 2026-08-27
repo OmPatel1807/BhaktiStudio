@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PaymentService } from '../services/payment.service.js';
 import { PricingEngineService } from '../services/pricingEngine.js';
+import { NotificationService } from '../services/notification.service.js';
 
 const prisma = new PrismaClient();
 
@@ -145,6 +146,25 @@ export const verifyPayment = async (req, res) => {
           details: JSON.stringify({ amount: paidAmount, newPaymentStatus, newOrderStatus, transactionId: paymentId }),
         },
       });
+    }
+
+    // Dispatch payment confirmation notification
+    try {
+      const customerUser = await prisma.user.findUnique({ where: { id: order.customerId } });
+      await NotificationService.dispatch({
+        eventType: 'PAYMENT_RECEIVED',
+        payload: {
+          customerId: order.customerId,
+          customerName: customerUser?.name || 'Customer',
+          customerEmail: customerUser?.email,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          amount: paidAmount,
+          eventType: order.eventType,
+        },
+      });
+    } catch (notifErr) {
+      console.error('Failed to dispatch payment notification:', notifErr.message);
     }
 
     return res.json({
