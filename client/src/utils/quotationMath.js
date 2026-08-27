@@ -79,7 +79,12 @@ export function rehydrateQuotation(quotation, orderItems = []) {
 
   // Check if the stored values already match the calculated values
   const storedTotal = round2(quotation.totalAmount || 0);
+  
+  // Guard against legacy absurd values (> 10x computed equipment subtotal + overheads)
+  const isAbsurd = equipmentSubtotal > 0 && storedSubtotal > 10 * (equipmentSubtotal + additionalFeesTotal);
+
   const isAlreadyCorrect =
+    !isAbsurd &&
     Math.abs(storedTotal - totalAmount) < 0.01 &&
     Math.abs(storedSubtotal - grossSubtotal) < 0.01;
 
@@ -94,7 +99,7 @@ export function rehydrateQuotation(quotation, orderItems = []) {
     };
   }
 
-  // DB values are stale — return rehydrated version
+  // DB values are stale or legacy absurd — return rehydrated version
   return {
     ...quotation,
     subtotal: grossSubtotal,

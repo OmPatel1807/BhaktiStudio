@@ -6,6 +6,58 @@ import { logAuditEvent } from '../utils/auditLogger.js';
 
 const prisma = new PrismaClient();
 
+export const sanitizeOrderFinancials = (order) => {
+  if (!order) return order;
+
+  // Recompute subtotal from raw order items
+  const items = order.orderItems || order.items || [];
+  let calculatedSubtotal = 0;
+  for (const item of items) {
+    const rate = Number(item.finalRate || item.estimatedRate || item.rate || item.price || 0);
+    const qty = Number(item.quantity || 1);
+    const days = Number(item.days || order.totalDays || 1);
+    calculatedSubtotal += rate * qty * days;
+  }
+
+  // Round values
+  const round2 = (num) => Math.round((Number(num) || 0) * 100) / 100;
+  calculatedSubtotal = round2(calculatedSubtotal);
+
+  // If order has quotations, re-calculate and sanitize the latest quotation version
+  if (order.quotations && order.quotations.length > 0) {
+    order.quotations = order.quotations.map((quotation) => {
+      // Setup overheads
+      const setupFee = round2(quotation.setupFee ?? 3000);
+      const transportFee = round2(quotation.transportFee ?? 100);
+      const technicianFee = round2(quotation.technicianFee ?? 2000);
+
+      // Base for Tax = Subtotal + Rigging + Transport + Technician
+      const baseForTax = calculatedSubtotal + setupFee + transportFee + technicianFee;
+      
+      const discountVal = round2(quotation.discounts || 0);
+      const taxableAmount = Math.max(0, round2(baseForTax - discountVal));
+      
+      const gstRate = 18.0;
+      const taxAmount = round2((taxableAmount * gstRate) / 100);
+      const totalAmount = round2(taxableAmount + taxAmount);
+      const advanceFee = round2(totalAmount * 0.30);
+
+      return {
+        ...quotation,
+        subtotal: calculatedSubtotal, // dynamically computed equipment subtotal
+        setupFee,
+        transportFee,
+        technicianFee,
+        taxAmount,
+        totalAmount,
+        advanceFee,
+      };
+    });
+  }
+
+  return order;
+};
+
 /**
  * Generate Sequential Order Number (e.g., BS-2026-00101)
  */
@@ -396,7 +448,7 @@ export const getOrderById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    return res.json({ success: true, data: order });
+    return res.json({ success: true, data: sanitizeOrderFinancials(order) });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { POPULAR_BANKS } from '../../constants/bankUrls';
 import { getAdvancePercentage } from '../../services/pricingService';
+import { rehydrateQuotation } from '../../utils/quotationMath';
 
 const ADVANCE_PERCENTAGE = getAdvancePercentage();
 
-export const PaymentModal = ({ order, quotation, isOpen, onClose, onPaymentSuccess }) => {
+export const PaymentModal = ({ order, quotation: rawQuotation, isOpen, onClose, onPaymentSuccess }) => {
   const [paymentType, setPaymentType] = useState('ADVANCE'); // 'ADVANCE' | 'FULL'
   const [selectedMethod, setSelectedMethod] = useState('UPI'); // 'UPI' | 'NETBANKING_CARD'
   const [selectedBank, setSelectedBank] = useState('HDFC');
@@ -13,6 +14,10 @@ export const PaymentModal = ({ order, quotation, isOpen, onClose, onPaymentSucce
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState('SELECT'); // 'SELECT' | 'PROCESSING' | 'SUCCESS'
   const [errorMsg, setErrorMsg] = useState(null);
+
+  const quotation = useMemo(() => {
+    return rehydrateQuotation(rawQuotation || order?.latestQuotation || order?.approvedQuotation, order?.orderItems);
+  }, [rawQuotation, order]);
 
   useEffect(() => {
     if (order && quotation) {

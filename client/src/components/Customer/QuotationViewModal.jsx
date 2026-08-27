@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { getAdvancePercentage } from '../../services/pricingService';
+import { rehydrateQuotation } from '../../utils/quotationMath';
 
-export const QuotationViewModal = ({ order, quotation, isOpen, onClose, onResponseSubmitted }) => {
+export const QuotationViewModal = ({ order, quotation: rawQuotation, isOpen, onClose, onResponseSubmitted }) => {
   const [loading, setLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
 
-  if (!isOpen || !quotation) return null;
+  if (!isOpen || !rawQuotation) return null;
+
+  const quotation = rehydrateQuotation(rawQuotation, order?.orderItems);
 
   const handleResponse = async (action) => {
     setLoading(true);

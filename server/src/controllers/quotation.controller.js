@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PricingEngineService } from '../services/pricingEngine.js';
+import { sanitizeOrderFinancials } from './order.controller.js';
 
 const prisma = new PrismaClient();
 
@@ -158,12 +159,20 @@ export const createQuotationVersion = async (req, res) => {
 export const getQuotationHistory = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const quotations = await prisma.quotationVersion.findMany({
-      where: { orderId },
-      orderBy: { versionNumber: 'desc' },
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: true,
+        quotations: { orderBy: { versionNumber: 'desc' } },
+      },
     });
 
-    return res.json({ success: true, data: quotations });
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    const sanitized = sanitizeOrderFinancials(order);
+    return res.json({ success: true, data: sanitized.quotations });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
