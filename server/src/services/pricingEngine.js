@@ -61,8 +61,12 @@ export const resolveItemBaseRateAndTotal = (item, defaultDays = 1) => {
     }
   }
 
+  // For Area-based (LED Wall):
+  // If qty >= 20 (or qty === area), qty was stored as the sq ft area instead of number of LED screens.
+  const screenQty = isArea ? (qty >= 20 || qty === area ? 1 : (qty || 1)) : (qty || 1);
+
   const total = isArea
-    ? round2(area * baseRate * days * qty)
+    ? round2(area * baseRate * days * screenQty)
     : round2(qty * baseRate * days);
 
   return {

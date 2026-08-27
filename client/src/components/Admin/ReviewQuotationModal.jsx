@@ -89,7 +89,7 @@ export const ReviewQuotationModal = ({ order, isOpen, onClose, onSuccess }) => {
             id: i.id,
             rate: i.finalRate,
             finalRate: i.finalRate,
-            quantity: i.quantity
+            quantity: i.isSqFt ? 1 : i.quantity
           })),
           discount: Number(discount),
           discounts: Number(discount),

@@ -103,7 +103,44 @@ function runFinancialTruthAudit() {
     process.exit(1);
   }
 
-  console.log('\n✅ ALL FINANCIAL TRUTH AUDIT ASSERTIONS PASSED WITH 100% MATHEMATICAL PRECISION!');
+  console.log('\n--- TESTING ADMIN QUOTATION (V2) WHERE QUANTITY WAS ERRONEOUSLY STORED AS 96 ---');
+  const orderWithCorruptedQuantity = {
+    ...order00014,
+    orderItems: [
+      { serviceName: 'Stage Lighting Package', quantity: 2, estimatedRate: 6000 },
+      { serviceName: 'Line Array Sound System', quantity: 2, estimatedRate: 8000 },
+      { serviceName: 'Sony FX3 Cinema Camera', quantity: 4, estimatedRate: 3500 },
+      { serviceName: 'LED Wall P3.9', widthFt: 12, heightFt: 8, quantity: 96, estimatedRate: 150 } // quantity was set to area (96)
+    ],
+    quotations: [
+      {
+        versionNumber: 2,
+        setupFee: 4000,
+        transportFee: 3000,
+        technicianFee: 5000,
+        discounts: 0,
+      }
+    ]
+  };
+
+  const sanitizedV2 = sanitizeOrderFinancials(orderWithCorruptedQuantity);
+  const qV2 = sanitizedV2.quotations[0];
+  console.log(` - V2 Equipment Subtotal: ₹${qV2.subtotal} (Expected: ₹169200)`);
+  console.log(` - V2 Setup: +₹${qV2.setupFee}`);
+  console.log(` - V2 Transport: +₹${qV2.transportFee}`);
+  console.log(` - V2 Technician: +₹${qV2.technicianFee}`);
+  console.log(` - V2 Grand Total: ₹${qV2.totalAmount} (Expected: ₹213816)`);
+
+  if (qV2.subtotal !== 169200) {
+    console.error(`❌ V2 Subtotal mismatch: expected 169200, got ${qV2.subtotal}`);
+    process.exit(1);
+  }
+  if (qV2.totalAmount !== 213816) {
+    console.error(`❌ V2 Grand total mismatch: expected 213816, got ${qV2.totalAmount}`);
+    process.exit(1);
+  }
+
+  console.log('\n✅ ALL FINANCIAL TRUTH AUDIT ASSERTIONS (V1 & V2) PASSED WITH 100% MATHEMATICAL PRECISION!');
 }
 
 runFinancialTruthAudit();

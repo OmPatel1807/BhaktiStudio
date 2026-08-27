@@ -6,6 +6,8 @@ export const downloadQuotationPdf = (order) => {
   try {
     if (!order) return;
 
+    const orderCode = order.orderNumber || (order.id ? `BS-2026-${String(order.id).padStart(5, '0')}` : 'BS-QUOTATION');
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',

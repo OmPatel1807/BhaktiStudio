@@ -114,11 +114,16 @@ export const updateOrderQuotation = async (req, res) => {
     // Update order items rates/quantities if provided from frontend
     for (const item of items) {
       if (item.id) {
+        const existingItem = await prisma.orderItem.findUnique({ where: { id: item.id } });
+        const isArea = Boolean(existingItem?.widthFt && existingItem?.heightFt);
+        const rawQty = Number(item.quantity || 1);
+        const normalizedQty = isArea && (rawQty >= 20 || rawQty === (existingItem.widthFt * existingItem.heightFt)) ? 1 : rawQty;
+
         await prisma.orderItem.update({
           where: { id: item.id },
           data: {
             finalRate: Number(item.finalRate || item.rate || item.estimatedRate || 0),
-            quantity: Number(item.quantity || 1),
+            quantity: normalizedQty,
           },
         });
       }
