@@ -1,7 +1,35 @@
 import { Resend } from 'resend';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM_EMAIL = process.env.EMAIL_FROM || 'Bhakti Studio <onboarding@resend.dev>';
+
+export const getAdminNotificationRecipients = async () => {
+  const envAdmins = (process.env.ADMIN_NOTIFICATION_EMAIL || process.env.EMAIL_ADMIN || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+
+  // Default fallback if env has nothing
+  if (envAdmins.length === 0) {
+    envAdmins.push('admin@bhaktistudio.com');
+  }
+
+  try {
+    const dbAdmins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { email: true }
+    });
+    const dbAdminEmails = dbAdmins.map(a => a.email).filter(Boolean);
+    
+    // Merge unique emails
+    return Array.from(new Set([...envAdmins, ...dbAdminEmails]));
+  } catch (err) {
+    console.warn('Failed to query DB admins, falling back to ENV:', err.message);
+    return envAdmins;
+  }
+};
 
 export const sendTransactionalEmail = async ({ to, subject, html, text }) => {
   if (!resend) {

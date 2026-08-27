@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { sendTransactionalEmail, emailTemplates } from './email.service.js';
+import { sendTransactionalEmail, emailTemplates, getAdminNotificationRecipients } from './email.service.js';
 
 const prisma = new PrismaClient();
 
@@ -98,14 +98,17 @@ export class NotificationService {
               actionUrl: `/admin/orders`,
               type: 'ORDER_SUBMITTED',
             });
-            // Notify Admin Email
+            // Notify Admin Email (Dynamic Broadcast to all active admins)
             {
               const emailData = emailTemplates.adminOrderAlert(payload);
-              await EmailProvider.send({
-                toEmail: process.env.EMAIL_ADMIN || 'admin@bhaktistudio.com',
-                subject: emailData.subject,
-                htmlContent: emailData.html,
-              });
+              const adminEmails = await getAdminNotificationRecipients();
+              for (const adminEmail of adminEmails) {
+                await EmailProvider.send({
+                  toEmail: adminEmail,
+                  subject: emailData.subject,
+                  htmlContent: emailData.html,
+                });
+              }
             }
             // Customer Email Booking Inquiry Acknowledgment
             if (payload.customerEmail) {
